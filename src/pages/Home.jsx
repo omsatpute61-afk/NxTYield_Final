@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Activity, Droplets, Cloud, Wifi, Sprout, Thermometer, Wind, FlaskConical, Leaf } from 'lucide-react';
+import DigitalFarmTwin from '../components/DigitalFarmTwin';
 import { useFarmData } from '../context/FarmDataContext';
 import {
   buildAlerts,
@@ -13,44 +14,6 @@ import {
   toNumber,
 } from '../lib/farmUtils';
 import './Home.css';
-
-const grassBlades = [
-  { top: '8%', left: '12%', delay: '0.1s', scale: 0.9 },
-  { top: '10%', left: '35%', delay: '0.6s', scale: 1.1 },
-  { top: '12%', left: '58%', delay: '1.2s', scale: 0.8 },
-  { top: '14%', left: '82%', delay: '0.4s', scale: 1.05 },
-  { top: '18%', left: '20%', delay: '0.8s', scale: 0.95 },
-  { top: '20%', left: '46%', delay: '1.5s', scale: 1.2 },
-  { top: '22%', left: '72%', delay: '0.3s', scale: 0.85 },
-  { top: '25%', left: '15%', delay: '0.9s', scale: 1.1 },
-  { top: '28%', left: '38%', delay: '0.2s', scale: 1.0 },
-  { top: '30%', left: '64%', delay: '1.1s', scale: 1.25 },
-  { top: '32%', left: '88%', delay: '0.5s', scale: 0.9 },
-  { top: '36%', left: '25%', delay: '1.4s', scale: 1.15 },
-  { top: '38%', left: '52%', delay: '0.7s', scale: 0.85 },
-  { top: '40%', left: '78%', delay: '0.3s', scale: 1.0 },
-  { top: '45%', left: '10%', delay: '0.9s', scale: 1.1 },
-  { top: '46%', left: '34%', delay: '1.6s', scale: 0.95 },
-  { top: '48%', left: '60%', delay: '0.2s', scale: 1.2 },
-  { top: '50%', left: '82%', delay: '0.8s', scale: 1.05 },
-  { top: '54%', left: '22%', delay: '1.3s', scale: 0.85 },
-  { top: '56%', left: '48%', delay: '0.5s', scale: 1.1 },
-  { top: '58%', left: '74%', delay: '1.1s', scale: 1.0 },
-  { top: '62%', left: '15%', delay: '0.4s', scale: 1.15 },
-  { top: '64%', left: '40%', delay: '1.5s', scale: 0.9 },
-  { top: '66%', left: '68%', delay: '0.7s', scale: 1.2 },
-  { top: '68%', left: '90%', delay: '0.1s', scale: 1.0 },
-  { top: '72%', left: '28%', delay: '0.9s', scale: 0.85 },
-  { top: '74%', left: '55%', delay: '1.4s', scale: 1.1 },
-  { top: '76%', left: '80%', delay: '0.3s', scale: 1.0 },
-  { top: '80%', left: '12%', delay: '0.8s', scale: 1.05 },
-  { top: '82%', left: '36%', delay: '1.6s', scale: 0.9 },
-  { top: '84%', left: '62%', delay: '0.2s', scale: 1.25 },
-  { top: '86%', left: '85%', delay: '1.0s', scale: 0.95 },
-  { top: '90%', left: '20%', delay: '0.5s', scale: 1.1 },
-  { top: '92%', left: '45%', delay: '1.2s', scale: 0.85 },
-  { top: '94%', left: '70%', delay: '0.3s', scale: 1.0 },
-];
 
 const sensorDefinitions = [
   {
@@ -148,6 +111,19 @@ const sensorDefinitions = [
   },
 ];
 
+const irrigationTimerOptions = [
+  { value: '0', label: '0', detail: 'Off' },
+  { value: '15', label: '15 min', detail: 'Timed' },
+  { value: '30', label: '30 min', detail: 'Timed' },
+  { value: 'infinity', label: 'Always', detail: 'Until off' },
+];
+
+function formatTimerRemaining(seconds) {
+  if (seconds <= 0) return '0 min';
+  const minutes = Math.ceil(seconds / 60);
+  return `${minutes} min`;
+}
+
 function buildSensorData(latest) {
   return sensorDefinitions.map((sensor) => {
     const value = latest?.[sensor.field] ?? null;
@@ -188,17 +164,76 @@ function SensorCard({ sensor }) {
   );
 }
 
+function DashboardArrivalTransition() {
+  return (
+    <div className="dashboard-arrival" aria-hidden="true">
+      <div className="dashboard-arrival__grid" />
+      <div className="dashboard-arrival__scan" />
+      <div className="dashboard-arrival__mark">
+        <img src="/nxtyield-logo.png" alt="" />
+        <span>Dashboard online</span>
+      </div>
+    </div>
+  );
+}
+
 function Home() {
   const { latest, connected, insights, summary, weather, refreshInsights } = useFarmData();
-  const [irrigationLevel, setIrrigationLevel] = useState(0);
+  const [irrigationTimer, setIrrigationTimer] = useState('0');
+  const [irrigationRemaining, setIrrigationRemaining] = useState(0);
+  const [showArrival, setShowArrival] = useState(false);
+  const arrivalRequestedRef = useRef(false);
 
   useEffect(() => {
-    if (latest?.irrigation_active !== undefined && latest?.irrigation_active !== null) {
-      const timer = window.setTimeout(() => setIrrigationLevel(latest.irrigation_active ? 100 : 0), 0);
-      return () => window.clearTimeout(timer);
-    }
+    if (irrigationTimer !== '15' && irrigationTimer !== '30') return undefined;
+
+    const timer = window.setInterval(() => {
+      setIrrigationRemaining((remaining) => {
+        if (remaining <= 1) {
+          setIrrigationTimer('0');
+          return 0;
+        }
+        return remaining - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [irrigationTimer]);
+
+  useEffect(() => {
+    const shouldShowArrival =
+      arrivalRequestedRef.current || window.sessionStorage?.getItem('nxtyield-dashboard-arrival') === 'true';
+
+    if (!shouldShowArrival) return undefined;
+
+    arrivalRequestedRef.current = true;
+    window.sessionStorage.removeItem('nxtyield-dashboard-arrival');
+    setShowArrival(true);
+    const timer = window.setTimeout(() => setShowArrival(false), 1320);
+
+    return () => window.clearTimeout(timer);
+  }, []);
+
+  function selectIrrigationTimer(value) {
+    setIrrigationTimer(value);
+    if (value === '15') setIrrigationRemaining(15 * 60);
+    else if (value === '30') setIrrigationRemaining(30 * 60);
+    else setIrrigationRemaining(0);
+  }
+
+  function irrigationTimerStatus(irrigationActive) {
+    if (irrigationActive) return 'RELAY ON';
+    if (irrigationTimer === '0') return 'OFF';
+    if (irrigationTimer === 'infinity') return 'UNTIL OFF';
+    return 'TIMER SET';
+  }
+
+  function irrigationTimerDetail(irrigationActive) {
+    if (irrigationActive && irrigationTimer === '0') return 'Telemetry active';
+    if (irrigationTimer === '15' || irrigationTimer === '30') return `${formatTimerRemaining(irrigationRemaining)} remaining`;
+    if (irrigationTimer === 'infinity') return 'No auto shutoff';
     return undefined;
-  }, [latest?.irrigation_active]);
+  }
 
   const sensorData = buildSensorData(latest);
   const healthScore = summary.healthScore;
@@ -211,10 +246,12 @@ function Home() {
   const networkStatus = connected ? 'UP' : 'WAIT';
   const alerts = buildAlerts(latest, insights, connected);
   const irrigationActive = latest?.irrigation_active === true;
-  const irrigationDisplay = irrigationActive ? 'ACTIVE' : irrigationLevel === 0 ? 'OFF' : `${irrigationLevel}%`;
+  const irrigationDisplay = irrigationTimerStatus(irrigationActive);
+  const irrigationDetail = irrigationTimerDetail(irrigationActive);
 
   return (
-    <div className="container page-home">
+    <div className={`container page-home ${showArrival ? 'page-home--arriving' : ''}`}>
+      {showArrival && <DashboardArrivalTransition />}
       <div className="hud-grid">
         <div className="panel central-hud">
           <div className="panel-header">
@@ -271,29 +308,13 @@ function Home() {
             <h2 className="panel-title">Digital Farm Twin</h2>
             <div className={`badge ${connected ? 'badge-success' : 'badge-warning'}`}>{connected ? 'Live Tracking' : 'Waiting'}</div>
           </div>
-          <div className="iso-container">
-            <div className="iso-scene">
-              <div className="iso-farm">
-                <div className="grass-layer" />
-                {grassBlades.map((gb, idx) => (
-                  <div
-                    key={idx}
-                    className="grass-blade"
-                    style={{
-                      top: gb.top,
-                      left: gb.left,
-                      animationDelay: gb.delay,
-                      transform: `scale(${gb.scale})`,
-                    }}
-                  />
-                ))}
-                {[...Array(8)].map((_, i) => (
-                  <div key={i} className="crop-row" />
-                ))}
-              </div>
-            </div>
-            <div className="compass">N ^</div>
-          </div>
+          <DigitalFarmTwin
+            latest={latest}
+            weather={weather}
+            insights={insights}
+            summary={summary}
+            connected={connected}
+          />
         </div>
 
         <div className="panel action-feed">
@@ -318,27 +339,25 @@ function Home() {
 
           <div className="irrigation-control">
             <div className="irr-header">
-              <span className="irr-label">Irrigation Intensity</span>
-              <span className={`irr-val ${irrigationActive || irrigationLevel > 0 ? 'active' : ''}`}>
+              <span className="irr-label">Irrigation Timer</span>
+              <span className={`irr-val ${irrigationActive || irrigationTimer !== '0' ? 'active' : ''}`}>
                 {irrigationDisplay}
               </span>
             </div>
-            <input
-              type="range"
-              min={0}
-              max={100}
-              step={5}
-              value={irrigationLevel}
-              onChange={(e) => setIrrigationLevel(Number(e.target.value))}
-              className="irr-slider"
-              style={{ backgroundSize: `${irrigationLevel}% 100%` }}
-            />
-            <div className="irr-marks">
-              <span>Off</span>
-              <span>Low</span>
-              <span>Med</span>
-              <span>High</span>
+            <div className="irr-options" role="group" aria-label="Irrigation timer presets">
+              {irrigationTimerOptions.map((option) => (
+                <button
+                  type="button"
+                  key={option.value}
+                  className={`irr-option ${irrigationTimer === option.value ? 'active' : ''}`}
+                  onClick={() => selectIrrigationTimer(option.value)}
+                >
+                  <span>{option.label}</span>
+                  <small>{option.detail}</small>
+                </button>
+              ))}
             </div>
+            <div className="irr-timer-detail">{irrigationDetail || 'Relay off'}</div>
           </div>
 
           <button className="btn btn-accent w-full mt-3" onClick={() => refreshInsights(true)}>Run Full Diagnostic</button>
