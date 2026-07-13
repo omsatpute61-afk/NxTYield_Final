@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Activity, Droplets, Cloud, Wifi, Sprout, Thermometer, Wind, FlaskConical, Leaf } from 'lucide-react';
+import { Activity, Droplets, CloudSun, Wifi, Sprout, Thermometer, Wind, FlaskConical } from 'lucide-react';
 import DigitalFarmTwin from '../components/DigitalFarmTwin';
 import { useFarmData } from '../context/FarmDataContext';
 import {
@@ -90,7 +90,7 @@ const sensorDefinitions = [
     label: 'Potassium (K)',
     field: 'potassium',
     unit: 'mg/kg',
-    icon: Leaf,
+    icon: FlaskConical,
     color: 'var(--color-success)',
     min: 0,
     max: 300,
@@ -270,7 +270,7 @@ function Home() {
               <span className="hlt-val" style={{ color: 'var(--color-blue)' }}>{moistureDisplay === '--' ? '--' : `${moistureDisplay}%`}</span>
             </div>
             <div className="hlt-row">
-              <Cloud size={13} style={{ color: 'var(--color-amber)' }} />
+              <CloudSun size={13} style={{ color: 'var(--color-amber)' }} />
               <span className="hlt-name">Weather</span>
               <span className="hlt-val" style={{ color: 'var(--color-amber)' }}>{weatherDisplay}</span>
             </div>
