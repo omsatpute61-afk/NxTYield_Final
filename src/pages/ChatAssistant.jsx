@@ -31,10 +31,18 @@ function ChatAssistant() {
     const providerText = chatStatus?.llm_enabled
       ? `I am connected to ${chatStatus.provider} and can use your live soil readings.`
       : 'AI API not available. I can answer basic sensor-based questions with local rules.';
-    setMessages([{
+    const greeting = {
       role: 'assistant',
       content: `Hello. ${providerText}`,
-    }]);
+    };
+
+    setMessages((current) => {
+      if (!current.length) return [greeting];
+      if (current.length === 1 && current[0].role === 'assistant' && current[0].content.startsWith('Hello. ')) {
+        return [greeting];
+      }
+      return current;
+    });
   }, [chatStatus?.llm_enabled, chatStatus?.provider]);
 
   useEffect(() => {

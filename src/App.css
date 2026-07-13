@@ -10,6 +10,11 @@
   padding-bottom: 6rem; /* for floating status bar */
 }
 
+.main-content--landing {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
 .app-fallback-panel {
   display: flex;
   flex-direction: column;
@@ -22,11 +27,21 @@
     padding-top: 8.75rem;
     padding-bottom: 7.5rem;
   }
+
+  .main-content--landing {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
 }
 
 @media (max-width: 640px) {
   .main-content {
     padding-top: 10.75rem;
     padding-bottom: 9rem;
+  }
+
+  .main-content--landing {
+    padding-top: 0;
+    padding-bottom: 0;
   }
 }

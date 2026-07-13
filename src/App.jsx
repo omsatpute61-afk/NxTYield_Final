@@ -7,6 +7,7 @@ import StartupLoader from './components/StartupLoader';
 import './App.css';
 
 const Home = lazy(() => import('./pages/Home'));
+const Landing = lazy(() => import('./pages/Landing'));
 const Weather = lazy(() => import('./pages/Weather'));
 const Crop = lazy(() => import('./pages/Crop'));
 const AIInsights = lazy(() => import('./pages/AIInsights'));
@@ -26,16 +27,18 @@ function RouteFallback() {
 
 function AppShell() {
   const location = useLocation();
+  const isLanding = location.pathname === '/';
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${isLanding ? 'app-container--landing' : ''}`}>
       <StartupLoader />
-      <Navbar />
-      <main className="main-content">
+      {!isLanding && <Navbar />}
+      <main className={`main-content ${isLanding ? 'main-content--landing' : ''}`}>
         <ErrorBoundary resetKey={location.pathname}>
           <Suspense fallback={<RouteFallback />}>
             <Routes>
-              <Route path="/" element={<Home />} />
+              <Route path="/" element={<Landing />} />
+              <Route path="/dashboard" element={<Home />} />
               <Route path="/weather" element={<Weather />} />
               <Route path="/crop" element={<Crop />} />
               <Route path="/ai-insights" element={<AIInsights />} />
@@ -46,7 +49,7 @@ function AppShell() {
           </Suspense>
         </ErrorBoundary>
       </main>
-      <FloatingStatus />
+      {!isLanding && <FloatingStatus />}
     </div>
   );
 }

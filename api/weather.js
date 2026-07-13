@@ -60,6 +60,7 @@ export default async function handler(req, res) {
     const forecastDays = groupForecastDays(forecast.list);
     const weather = current.weather?.[0] || {};
     const windSpeed = current.wind?.speed;
+    const windDirection = current.wind?.deg;
 
     return json(res, 200, {
       available: true,
@@ -73,6 +74,7 @@ export default async function handler(req, res) {
         humidity: current.main?.humidity,
         pressure: current.main?.pressure,
         wind_speed: windSpeed === undefined ? null : Math.round(windSpeed * 36) / 10,
+        wind_direction: windDirection === undefined ? null : windDirection,
         cloud_cover: current.clouds?.all,
         description: weather.description ? weather.description.replace(/\b\w/g, (char) => char.toUpperCase()) : null,
         icon: weather.icon,
