@@ -1,13 +1,14 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
-import { ArrowRight, Brain, CloudRain, Cpu, Droplets, Gauge, RadioTower, RotateCcw, Sprout, Thermometer } from 'lucide-react';
+import { ArrowRight, BrainCircuit, CloudRain, Cpu, Droplets, FlaskConical, Radio, RotateCcw, Sprout, Thermometer } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import * as THREE from 'three';
 import { FarmTwinScene } from '../components/DigitalFarmTwin';
 import { useFarmData } from '../context/FarmDataContext';
 import { compactValue, hasSensorData, toNumber } from '../lib/farmUtils';
+import { timeLightingFromHour } from '../lib/timeLighting';
 import './Landing.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -24,7 +25,7 @@ const storySections = [
   {
     id: 'intelligence',
     kicker: 'Data to intelligence',
-    title: 'Raw conditions become clear decisions.',
+    title: <>Raw conditions become <span className="landing-title-highlight">clear decisions.</span></>,
     copy: 'Field sensing, environmental data and intelligent analysis are connected so farmers can act before small problems become lost yield.',
   },
   {
@@ -36,7 +37,7 @@ const storySections = [
   {
     id: 'twin',
     kicker: 'Digital twin reveal',
-    title: 'Your entire farm. Alive in one view.',
+    title: <>Your entire farm. <span className="landing-title-highlight landing-title-highlight--green">Alive in one view.</span></>,
     copy: 'Monitor the field, understand its condition and control critical actions from one connected dashboard.',
   },
 ];
@@ -80,15 +81,15 @@ function sensorReadings(latest) {
   return [
     { icon: Droplets, label: 'Soil moisture probe', value: latest?.moisture == null ? 'Awaiting live feed' : `${compactValue(latest.moisture)}%` },
     { icon: Thermometer, label: 'Soil-temperature probe', value: latest?.soil_temperature == null ? 'Awaiting live feed' : `${compactValue(latest.soil_temperature, 1)} C` },
-    { icon: Gauge, label: 'NPK sensor', value: npkValues.length ? npkValues.join(' / ') : 'Awaiting live feed' },
-    { icon: RadioTower, label: 'Atmospheric station', value: latest?.air_temperature == null ? 'Awaiting live feed' : `${compactValue(latest.air_temperature, 1)} C air` },
+    { icon: FlaskConical, label: 'NPK sensor', value: npkValues.length ? npkValues.join(' / ') : 'Awaiting live feed' },
+    { icon: Radio, label: 'Atmospheric station', value: latest?.air_temperature == null ? 'Awaiting live feed' : `${compactValue(latest.air_temperature, 1)} C air` },
     { icon: CloudRain, label: 'Rain sensor', value: latest?.rain_detected == null ? 'Awaiting live feed' : latest.rain_detected ? 'Rain detected' : 'Clear' },
   ];
 }
 
 function buildLandingEnv({ latest, weather, summary, progress }) {
-  const hour = 7 + progress * 11;
-  const daylight = Math.sin(((hour - 5) / 16) * Math.PI);
+  const hour = 4.75 + progress * 14.7;
+  const lighting = timeLightingFromHour(hour);
   const moisture = toNumber(latest?.moisture);
   const health = toNumber(summary?.healthScore);
   const description = String(weather?.current?.description || '').toLowerCase();
@@ -110,9 +111,7 @@ function buildLandingEnv({ latest, weather, summary, progress }) {
     cropName: 'Field crop',
     updatedAt: latest?.timestamp,
     timeLabel: 'Landing preview',
-    daylight,
-    night: progress < 0.08,
-    golden: progress > 0.45 && progress < 0.7 ? 0.8 : 0.2,
+    ...lighting,
     soilWetness: Math.max(Math.min((moisture ?? 52) / 100 + (storyIrrigation ? 0.16 : 0), 1), 0),
     cropHealth: Math.max(Math.min((health ?? 72) / 100, 1), 0),
     nutrientIssues: progress > 0.34 && progress < 0.48 ? ['nitrogen'] : [],
@@ -268,7 +267,7 @@ function Landing() {
             <div className="landing-readouts" aria-label="Live sensor preview">
               {readings.map(({ icon: Icon, label, value }) => (
                 <div className="landing-readout" key={label}>
-                  <Icon size={15} />
+                  <Icon size={20} aria-hidden="true" />
                   <span>{label}</span>
                   <strong>{value}</strong>
                 </div>
@@ -278,11 +277,11 @@ function Landing() {
 
           <div className="landing-hero-copy">
             <p className="landing-eyebrow">NXTYIELD / FARMSENSE AI</p>
-            <h1 id="landing-title">Know the field.<br />Predict what's next.<br />Act in time.</h1>
+            <h1 id="landing-title">Know the <span className="landing-title-highlight">field.</span><br />Predict what's next.<br /><span className="landing-title-highlight landing-title-highlight--green">Act in time.</span></h1>
             <p>NxTYield transforms live soil, weather and nutrient data into intelligent recommendations and automated farm actions.</p>
             <div className="landing-actions">
               <button className="landing-primary" type="button" onClick={enterDashboard} disabled={transitioning}>
-                Optimize Your Farm <ArrowRight size={17} />
+                Optimize Your Farm <ArrowRight size={18} aria-hidden="true" />
               </button>
               <button className="landing-secondary" type="button" onClick={scrollToSystem}>Explore the System</button>
             </div>
@@ -313,18 +312,18 @@ function Landing() {
         <section className="landing-system" id="system-story" aria-labelledby="system-title">
           <div className="landing-section-copy">
             <span>Why NxTYield exists</span>
-            <h2 id="system-title">Built for farmers who cannot afford to guess.</h2>
+            <h2 id="system-title">Built for farmers who <span className="landing-title-highlight">cannot afford to guess.</span></h2>
             <p>For small and marginal farmers, every irrigation cycle, nutrient decision and weather change matters. NxTYield brings sensing, intelligence and automation together without turning farm management into a complicated technical system.</p>
           </div>
           <div className="system-path" aria-label="NxTYield operating path">
             {[
-              ['Field Sensors', RadioTower],
-              ['NxTYield Intelligence', Brain],
+              ['Field Sensors', Radio],
+              ['NxTYield Intelligence', BrainCircuit],
               ['Farmer Guidance', Sprout],
               ['Automated Action', Cpu],
             ].map(([label, Icon]) => (
               <div className="system-node" key={label}>
-                <Icon size={18} />
+                <Icon size={24} aria-hidden="true" />
                 <strong>{label}</strong>
               </div>
             ))}
@@ -334,7 +333,7 @@ function Landing() {
         <section className="landing-capabilities" aria-labelledby="capabilities-title">
           <div className="landing-section-copy">
             <span>System capabilities</span>
-            <h2 id="capabilities-title">One operating surface for the farm.</h2>
+            <h2 id="capabilities-title"><span className="landing-title-highlight landing-title-highlight--green">One operating surface</span> for the farm.</h2>
           </div>
           <div className="capability-rail">
             {capabilities.map(([title, copy], index) => (
@@ -369,14 +368,14 @@ function Landing() {
 
         <section className="landing-final" aria-labelledby="final-title">
           <p className="landing-eyebrow">Operational dashboard ready</p>
-          <h2 id="final-title">The next yield begins with the next decision.</h2>
+          <h2 id="final-title">The next yield begins with the <span className="landing-title-highlight">next decision.</span></h2>
           <p>Enter the NxTYield Farm Intelligence Dashboard</p>
           <div className="landing-actions">
             <button className="landing-primary" type="button" onClick={enterDashboard} disabled={transitioning}>
-              Optimize Your Farm <ArrowRight size={17} />
+              Optimize Your Farm <ArrowRight size={18} aria-hidden="true" />
             </button>
             <button className="landing-secondary" type="button" onClick={() => window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' })}>
-              Return to top <RotateCcw size={15} />
+              Return to top <RotateCcw size={18} aria-hidden="true" />
             </button>
           </div>
         </section>

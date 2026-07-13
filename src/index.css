@@ -97,6 +97,12 @@ svg {
   max-width: 100%;
 }
 
+.lucide {
+  stroke: currentColor;
+  stroke-width: 1.65;
+  fill: none;
+}
+
 /* Common Layout Components */
 .container {
   max-width: 1600px;

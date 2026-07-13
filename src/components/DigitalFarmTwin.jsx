@@ -5,6 +5,7 @@ import { ContactShadows, Html, OrbitControls, RoundedBox } from '@react-three/dr
 import { Clock, Maximize2, Pause, Play, RotateCcw, Tag, TimerReset } from 'lucide-react';
 import * as THREE from 'three';
 import { compactValue, formatShortTime, hasSensorData, toNumber } from '../lib/farmUtils';
+import { timeLightingFromHour } from '../lib/timeLighting';
 import './DigitalFarmTwin.css';
 
 const DAY_MS = 86400000;
@@ -12,6 +13,13 @@ const DEMO_DAY_MS = 55000;
 const FARM_WIDTH = 7.6;
 const FARM_DEPTH = 4.8;
 const ROWS = [-1.45, -0.82, -0.19, 0.44, 1.07, 1.7];
+const FARMER_HUT_POSITION = [-3.42, 0.13, 0.92];
+const FARMER_HUT_ROTATION_Y = -0.06;
+const FARMER_HUT_SCALE = 1.08;
+const FARMER_ENTRY_X = -3.45;
+const FARMER_LANE_Z = 1.38;
+const FARMER_HUT_INNER_X = -3.42;
+const FARMER_HUT_INNER_Z = 1.03;
 const NUTRIENT_RANGES = {
   nitrogen: [20, 40],
   phosphorus: [12, 35],
@@ -32,6 +40,14 @@ function clamp(value, min, max) {
 function smoothstep(edge0, edge1, value) {
   const x = clamp((value - edge0) / (edge1 - edge0), 0, 1);
   return x * x * (3 - 2 * x);
+}
+
+function mixNumber(start, end, amount) {
+  return start + (end - start) * amount;
+}
+
+function mixColor(start, end, amount) {
+  return new THREE.Color(start).lerp(new THREE.Color(end), clamp(amount, 0, 1)).getStyle();
 }
 
 function currentStoryProgress(fallback = 0) {
@@ -122,7 +138,7 @@ function environmentFromData({ latest, weather, insights, summary, currentTime, 
   const apiWindDirection = toNumber(weather?.current?.wind_direction);
   const description = String(weather?.current?.description || '').toLowerCase();
   const hour = currentTime.getHours() + currentTime.getMinutes() / 60;
-  const daylight = Math.sin((clamp(hour, 5, 21) - 5) / 16 * Math.PI);
+  const lighting = timeLightingFromHour(hour);
   const nutrientIssues = Object.entries(NUTRIENT_RANGES)
     .filter(([key, [low, high]]) => {
       const value = toNumber(latest?.[key]);
@@ -144,9 +160,7 @@ function environmentFromData({ latest, weather, insights, summary, currentTime, 
     cropName: insights?.crop_health?.crop || insights?.crop_health?.status || 'Field crop',
     updatedAt: latest?.timestamp,
     timeLabel: demoMode ? `Demo ${formatShortTime(currentTime.toISOString())}` : formatShortTime(currentTime.toISOString()),
-    daylight,
-    night: hour < 5.5 || hour > 19.5,
-    golden: clamp(1 - Math.abs(hour - 7) / 2.4, 0, 1) + clamp(1 - Math.abs(hour - 18) / 2.4, 0, 1),
+    ...lighting,
     soilWetness: clamp((moisture ?? 52) / 100, 0, 1),
     cropHealth: clamp((health ?? 70) / 100, 0, 1),
     nutrientIssues,
@@ -471,8 +485,71 @@ function FieldTree({ env, reducedMotion }) {
   );
 }
 
+function FarmerHut() {
+  return (
+    <group position={FARMER_HUT_POSITION} rotation={[0, FARMER_HUT_ROTATION_Y, 0]} scale={[FARMER_HUT_SCALE, FARMER_HUT_SCALE, FARMER_HUT_SCALE]}>
+      <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        <circleGeometry args={[0.82, 28]} />
+        <meshBasicMaterial color="#152018" transparent opacity={0.42} depthWrite={false} />
+      </mesh>
+
+      <mesh position={[0, 0.32, 0]} castShadow receiveShadow>
+        <cylinderGeometry args={[0.46, 0.5, 0.62, 18]} />
+        <meshStandardMaterial color="#6a4329" roughness={0.88} />
+      </mesh>
+      <mesh position={[0, 0.3, 0.43]} castShadow>
+        <boxGeometry args={[0.28, 0.42, 0.035]} />
+        <meshStandardMaterial color="#1b1510" roughness={0.9} />
+      </mesh>
+      <mesh position={[-0.2, 0.38, 0.39]} castShadow>
+        <boxGeometry args={[0.12, 0.11, 0.032]} />
+        <meshStandardMaterial color="#101916" roughness={0.82} />
+      </mesh>
+
+      <mesh position={[0, 0.78, 0]} castShadow>
+        <coneGeometry args={[0.7, 0.56, 22]} />
+        <meshStandardMaterial color="#c49342" roughness={0.96} />
+      </mesh>
+      {[0.24, 0.38, 0.52].map((radius, index) => (
+        <mesh key={radius} position={[0, 0.71 - index * 0.09, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[radius, 0.009, 6, 28]} />
+          <meshStandardMaterial color="#8d642b" roughness={0.92} />
+        </mesh>
+      ))}
+      {Array.from({ length: 8 }, (_, index) => {
+        const angle = (index / 8) * Math.PI * 2;
+        return (
+          <mesh
+            key={angle}
+            position={[Math.cos(angle) * 0.24, 0.67, Math.sin(angle) * 0.24]}
+            rotation={[0.72, angle, 0]}
+            castShadow
+          >
+            <cylinderGeometry args={[0.006, 0.01, 0.58, 5]} />
+            <meshStandardMaterial color="#d1a34d" roughness={0.98} />
+          </mesh>
+        );
+      })}
+
+      <group position={[0.5, 0.13, 0.66]} rotation={[0, 0.12, 0]}>
+        <mesh position={[0, 0.16, 0]} castShadow>
+          <cylinderGeometry args={[0.16, 0.18, 0.08, 12]} />
+          <meshStandardMaterial color="#5d3b25" roughness={0.82} />
+        </mesh>
+        {[-0.09, 0.09].map((x) => (
+          <mesh key={x} position={[x, 0.08, 0]} castShadow>
+            <cylinderGeometry args={[0.018, 0.022, 0.18, 6]} />
+            <meshStandardMaterial color="#3f2a1c" roughness={0.86} />
+          </mesh>
+        ))}
+      </group>
+    </group>
+  );
+}
+
 function LampPost({ env }) {
-  const lampOn = env.night || env.daylight < 0.18;
+  const skyLight = env.skyLight ?? env.daylight;
+  const lampOn = env.night || skyLight < 0.2;
   const glowOpacity = lampOn ? 0.18 : 0;
   const bulbColor = lampOn ? '#f2c56b' : '#5f6258';
 
@@ -567,8 +644,10 @@ function SunMoonClouds({ env, storyProgress = 1, reducedMotion }) {
   const sunRef = useRef(null);
   const moonRef = useRef(null);
   const p = clamp(storyProgress, 0, 1);
-  const sunOpacity = clamp(env.daylight * 0.9 + (env.golden || 0) * 0.22, 0.18, 0.88);
-  const moonOpacity = env.night ? 0.74 : clamp(0.58 - env.daylight * 0.8, 0, 0.48);
+  const sunLight = env.sunLight ?? env.daylight;
+  const skyLight = env.skyLight ?? env.daylight;
+  const sunOpacity = clamp(sunLight * 0.84 + (env.golden || 0) * 0.24, 0.04, 0.9);
+  const moonOpacity = clamp((env.moonLight ?? (1 - skyLight)) * 0.76, 0, 0.76);
   const storming = env.rainDetected;
   const cloudColor = storming ? '#0b0f0d' : '#c4d1c9';
   const cloudOpacity = storming
@@ -604,7 +683,7 @@ function SunMoonClouds({ env, storyProgress = 1, reducedMotion }) {
           </mesh>
           <mesh position={[0.12, 0.03, 0.03]}>
             <sphereGeometry args={[0.27, 32, 18]} />
-            <meshBasicMaterial color={env.night ? '#111922' : '#18231f'} transparent opacity={0.9} depthWrite={false} />
+            <meshBasicMaterial color={mixColor('#111922', '#18231f', skyLight)} transparent opacity={0.9} depthWrite={false} />
           </mesh>
           <mesh>
             <sphereGeometry args={[0.54, 32, 18]} />
@@ -635,10 +714,20 @@ function FarmerFertilizerAction({ storyProgress = 1, reducedMotion }) {
   const mist = useRef(null);
   const p = clamp(storyProgress, 0, 1);
   const entrance = smoothstep(0.62, 0.76, p);
-  const sprayAmount = smoothstep(0.69, 0.76, p);
-  const scale = 0.92 + entrance * 0.32;
-  const laneZ = 1.38;
-  const position = [-3.55 + entrance * 4.52, 0.2, laneZ];
+  const sprayAmount = smoothstep(0.69, 0.76, p) * (1 - smoothstep(0.78, 0.84, p));
+  const returnHome = smoothstep(0.82, 0.94, p);
+  const enterHut = smoothstep(0.94, 0.99, p);
+  const scale = 0.78 + entrance * 0.22;
+  const laneZ = FARMER_LANE_Z;
+  const entryX = FARMER_ENTRY_X;
+  const workX = entryX + 4.42;
+  const hutInnerX = FARMER_HUT_INNER_X;
+  const hutInnerZ = FARMER_HUT_INNER_Z;
+  const initialX = mixNumber(entryX, workX, entrance);
+  const doorX = mixNumber(initialX, entryX, returnHome);
+  const position = [mixNumber(doorX, hutInnerX, enterHut), 0.2, mixNumber(laneZ, hutInnerZ, enterHut)];
+  const entryScale = scale * mixNumber(1, 0.78, enterHut);
+  const initiallyVisible = (reducedMotion || p >= 0.6) && enterHut < 0.985;
   const sprayParticles = useMemo(() => Array.from({ length: 44 }, (_, index) => {
     const seedA = Math.sin(index * 17.91) * 0.5 + 0.5;
     const seedB = Math.cos(index * 11.37) * 0.5 + 0.5;
@@ -656,24 +745,42 @@ function FarmerFertilizerAction({ storyProgress = 1, reducedMotion }) {
     const scrollProgress = currentStoryProgress(0);
     const activeProgress = Math.max(p, scrollProgress);
     const activeEntrance = smoothstep(0.62, 0.76, activeProgress);
-    const activeSprayAmount = smoothstep(0.69, 0.76, activeProgress);
-    const activeWalking = 1 - smoothstep(0.76, 0.84, activeProgress);
-    const visible = reducedMotion || activeProgress >= 0.6;
+    const activeSprayAmount = smoothstep(0.69, 0.76, activeProgress) * (1 - smoothstep(0.78, 0.84, activeProgress));
+    const activeReturnHome = smoothstep(0.82, 0.94, activeProgress);
+    const activeEnterHut = smoothstep(0.94, 0.99, activeProgress);
+    const activeDuckAmount = smoothstep(0.955, 0.99, activeProgress);
+    const entranceWalking = 1 - smoothstep(0.76, 0.84, activeProgress);
+    const returnWalking = smoothstep(0.82, 0.88, activeProgress) * (1 - smoothstep(0.98, 1, activeProgress));
+    const activeWalking = Math.max(entranceWalking, returnWalking);
+    const visible = (reducedMotion || activeProgress >= 0.6) && activeEnterHut < 0.985;
 
     group.current.visible = visible;
     if (!visible) return;
-    group.current.position.set(-3.55 + activeEntrance * 4.52, 0.2, laneZ);
-    group.current.scale.setScalar(0.92 + activeEntrance * 0.32);
+    const activeWorkX = mixNumber(entryX, workX, activeEntrance);
+    const activeDoorX = mixNumber(activeWorkX, entryX, activeReturnHome);
+    group.current.position.set(
+      mixNumber(activeDoorX, hutInnerX, activeEnterHut),
+      0.2 - activeDuckAmount * 0.05,
+      mixNumber(laneZ, hutInnerZ, activeEnterHut),
+    );
+    group.current.rotation.y = mixNumber(-0.04, Math.PI - 0.12, activeReturnHome);
+    group.current.scale.setScalar((0.78 + activeEntrance * 0.22) * mixNumber(1, 0.78, activeEnterHut));
 
     const phase = clock.elapsedTime * 8.6;
     const stride = reducedMotion ? 0 : Math.sin(phase) * 0.34 * activeWalking;
     const bob = reducedMotion ? 0 : Math.abs(Math.sin(phase)) * 0.025 * activeWalking;
 
-    if (body.current) body.current.position.y = bob;
-    if (leftLeg.current) leftLeg.current.rotation.x = stride;
-    if (rightLeg.current) rightLeg.current.rotation.x = -stride;
-    if (leftArm.current) leftArm.current.rotation.x = -stride * 0.65;
-    if (rightArm.current) rightArm.current.rotation.z = -1.22 + Math.sin(clock.elapsedTime * 2.4) * 0.04 * activeSprayAmount;
+    if (body.current) {
+      body.current.position.y = bob - activeDuckAmount * 0.08;
+      body.current.rotation.x = activeDuckAmount * -0.12;
+    }
+    if (leftLeg.current) leftLeg.current.rotation.x = mixNumber(stride, 0.22, activeDuckAmount);
+    if (rightLeg.current) rightLeg.current.rotation.x = mixNumber(-stride, -0.18, activeDuckAmount);
+    if (leftArm.current) leftArm.current.rotation.x = mixNumber(-stride * 0.65, 0.1, activeDuckAmount);
+    if (rightArm.current) {
+      const sprayPose = -1.22 + Math.sin(clock.elapsedTime * 2.4) * 0.04 * activeSprayAmount;
+      rightArm.current.rotation.z = mixNumber(sprayPose, -0.26, activeDuckAmount);
+    }
 
     if (mist.current) {
       const mistVisible = activeSprayAmount > 0.05;
@@ -700,7 +807,7 @@ function FarmerFertilizerAction({ storyProgress = 1, reducedMotion }) {
   });
 
   return (
-    <group ref={group} position={position} rotation={[0, -0.04, 0]} scale={scale}>
+    <group ref={group} position={position} rotation={[0, -0.04, 0]} scale={entryScale} visible={initiallyVisible}>
       <group ref={body}>
         <mesh ref={leftLeg} position={[-0.07, 0.23, 0.04]} castShadow>
           <cylinderGeometry args={[0.034, 0.04, 0.42, 8]} />
@@ -784,19 +891,32 @@ function FarmerFertilizerAction({ storyProgress = 1, reducedMotion }) {
 
 function Lighting({ env }) {
   const sun = useRef(null);
-  const intensity = clamp(0.35 + env.daylight * 2 - (env.cloudy ? 0.55 : 0) - (env.rainDetected ? 0.35 : 0), 0.18, 2.4);
-  const color = env.golden > 0.25 ? '#f1a45c' : env.night ? '#8eb6d8' : '#ecf1dc';
+  const skyLight = env.skyLight ?? env.daylight;
+  const sunLight = env.sunLight ?? env.daylight;
+  const sunTravel = env.sunTravel ?? skyLight;
+  const weatherShade = (env.cloudy ? 0.18 : 0) + (env.rainDetected ? 0.24 : 0);
+  const directLight = clamp(sunLight - weatherShade, 0, 1);
+  const ambientLight = clamp(skyLight - weatherShade * 0.42, 0, 1);
+  const intensity = mixNumber(0.06, 2.25, directLight);
+  const hemiIntensity = mixNumber(0.34, 0.88, ambientLight);
+  const moonIntensity = clamp((env.moonLight ?? (1 - skyLight)) * 0.34, 0, 0.34);
+  const dayColor = mixColor('#8eb6d8', '#ecf1dc', ambientLight);
+  const color = mixColor(dayColor, '#f1a45c', clamp((env.golden || 0) * 0.72, 0, 0.72));
 
   useEffect(() => {
     if (!sun.current) return;
-    sun.current.position.set(-4 + env.daylight * 8, 2.4 + env.daylight * 4, 3.4);
+    sun.current.position.set(-4.8 + sunTravel * 9.6, 1.35 + sunLight * 5.1, 3.4);
     sun.current.target.position.set(0, 0, 0);
     sun.current.target.updateMatrixWorld();
-  }, [env.daylight]);
+  }, [sunLight, sunTravel]);
 
   return (
     <>
-      <hemisphereLight color={env.night ? '#132c3c' : '#d7e9da'} groundColor="#1b1712" intensity={env.night ? 0.58 : 0.82} />
+      <hemisphereLight
+        color={mixColor('#132c3c', '#d7e9da', ambientLight)}
+        groundColor={mixColor('#121512', '#1b1712', ambientLight)}
+        intensity={hemiIntensity}
+      />
       <directionalLight
         ref={sun}
         color={color}
@@ -809,7 +929,7 @@ function Lighting({ env }) {
         shadow-camera-top={5}
         shadow-camera-bottom={-5}
       />
-      {env.night && <directionalLight position={[-3, 3, -4]} color="#8eb6d8" intensity={0.32} />}
+      {moonIntensity > 0.02 && <directionalLight position={[-3, 3, -4]} color="#8eb6d8" intensity={moonIntensity} />}
     </>
   );
 }
@@ -916,11 +1036,15 @@ export function FarmTwinScene({
   storyProgress = 1,
   parallax,
 }) {
+  const skyLight = env.skyLight ?? env.daylight;
+  const backgroundColor = mixColor('#111922', '#18231f', skyLight);
+  const fogColor = mixColor('#111922', '#1a2621', skyLight);
+
   return (
     <>
       <FrameInvalidator active={!reducedMotion && sceneActive} />
-      <color attach="background" args={[env.night ? '#111922' : '#18231f']} />
-      <fog attach="fog" args={[env.night ? '#111922' : '#1a2621', 9, 17]} />
+      <color attach="background" args={[backgroundColor]} />
+      <fog attach="fog" args={[fogColor, 9, 17]} />
       {cameraMode === 'landing' ? <LandingCamera progress={storyProgress} parallax={parallax} /> : <CameraRig />}
       <Lighting env={env} />
       {cameraMode === 'landing' && <SunMoonClouds env={env} storyProgress={storyProgress} reducedMotion={reducedMotion} />}
@@ -928,6 +1052,7 @@ export function FarmTwinScene({
         <FarmBase env={env} />
         <CropField env={env} reducedMotion={reducedMotion} />
         <FieldTree env={env} reducedMotion={reducedMotion} />
+        <FarmerHut />
         {cameraMode === 'landing' && <FarmerFertilizerAction storyProgress={storyProgress} reducedMotion={reducedMotion} />}
         <IrrigationSystem env={env} reducedMotion={reducedMotion} />
         <FarmSensors env={env} latest={latest} labelsVisible={labelsVisible} selectedSensor={selectedSensor} onSelectSensor={onSelectSensor} />
@@ -1060,14 +1185,14 @@ export default function DigitalFarmTwin({ latest, weather, insights, summary, co
         {!env.hasSensor && mode !== 'demo' && <div className="dft-waiting">Waiting for sensor data</div>}
 
         <div className="dft-controls" aria-label="Digital farm twin controls">
-          <button type="button" className={mode === 'live' ? 'active' : ''} onClick={() => setMode('live')} aria-label="Use live time"><Clock size={14} /><span>Live</span></button>
-          <button type="button" className={mode === 'demo' ? 'active' : ''} onClick={() => setMode('demo')} aria-label="Use demo time"><TimerReset size={14} /><span>Demo</span></button>
+          <button type="button" className={mode === 'live' ? 'active' : ''} onClick={() => setMode('live')} aria-label="Use live time"><Clock size={18} aria-hidden="true" /><span>Live</span></button>
+          <button type="button" className={mode === 'demo' ? 'active' : ''} onClick={() => setMode('demo')} aria-label="Use demo time"><TimerReset size={18} aria-hidden="true" /><span>Demo</span></button>
           {mode === 'demo' && (
-            <button type="button" onClick={() => setPaused((value) => !value)} aria-label={paused ? 'Resume demo time' : 'Pause demo time'}>{paused ? <Play size={14} /> : <Pause size={14} />}</button>
+            <button type="button" onClick={() => setPaused((value) => !value)} aria-label={paused ? 'Resume demo time' : 'Pause demo time'}>{paused ? <Play size={18} aria-hidden="true" /> : <Pause size={18} aria-hidden="true" />}</button>
           )}
-          <button type="button" onClick={resetCamera} aria-label="Reset camera"><RotateCcw size={14} /></button>
-          <button type="button" className={labelsVisible ? 'active' : ''} onClick={() => setLabelsVisible((value) => !value)} aria-label="Toggle sensor labels"><Tag size={14} /></button>
-          <button type="button" onClick={toggleFullscreen} aria-label="Expand farm twin"><Maximize2 size={14} /></button>
+          <button type="button" onClick={resetCamera} aria-label="Reset camera"><RotateCcw size={18} aria-hidden="true" /></button>
+          <button type="button" className={labelsVisible ? 'active' : ''} onClick={() => setLabelsVisible((value) => !value)} aria-label="Toggle sensor labels"><Tag size={18} aria-hidden="true" /></button>
+          <button type="button" onClick={toggleFullscreen} aria-label="Expand farm twin"><Maximize2 size={18} aria-hidden="true" /></button>
         </div>
 
         <div className="dft-time-chip">{env.timeLabel}</div>

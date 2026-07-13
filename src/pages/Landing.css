@@ -147,6 +147,18 @@
   letter-spacing: 0;
 }
 
+.landing-title-highlight {
+  color: var(--color-amber);
+  background-image: linear-gradient(180deg, transparent 62%, rgba(216, 155, 43, 0.18) 62%);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+.landing-title-highlight--green {
+  color: var(--color-success);
+  background-image: linear-gradient(180deg, transparent 62%, rgba(62, 142, 99, 0.2) 62%);
+}
+
 .landing-hero-copy > p:not(.landing-eyebrow),
 .landing-section-copy p,
 .landing-final p,

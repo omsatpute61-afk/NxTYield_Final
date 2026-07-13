@@ -1,4 +1,4 @@
-import { Activity, Droplets, Target, Cpu } from 'lucide-react';
+import { Activity, Droplets, Sprout, Cpu } from 'lucide-react';
 import { useFarmData } from '../context/FarmDataContext';
 import { compactValue } from '../lib/farmUtils';
 import './FloatingStatus.css';
@@ -25,7 +25,7 @@ function FloatingStatus() {
         </div>
         <div className="status-divider"></div>
         <div className="status-item">
-          <Target size={16} className="text-warning" />
+          <Sprout size={16} className="text-warning" />
           <span className="fs-label">Crop:</span>
           <span className="fs-val">Not selected</span>
         </div>
