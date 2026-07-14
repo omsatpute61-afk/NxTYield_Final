@@ -375,6 +375,10 @@ function SensorDevice({ id, type, position, latest, env, labelsVisible, selected
         onSelect(id);
       }}
     >
+      <mesh position={[0, 0.45, 0]}>
+        <sphereGeometry args={[0.38, 12, 8]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.055, 0]} receiveShadow>
         <circleGeometry args={[0.25, 18]} />
         <meshBasicMaterial color={warning ? '#5a3a13' : '#17382d'} transparent opacity={0.55} />
@@ -946,10 +950,12 @@ function CameraRig() {
   const { camera } = useThree();
 
   const reset = useCallback(() => {
+    const target = new THREE.Vector3(0, 0.05, 0);
     camera.position.set(6.9, 5.4, 6.7);
     camera.zoom = 62;
+    camera.lookAt(target);
     camera.updateProjectionMatrix();
-    controls.current?.target.set(0, 0.05, 0);
+    controls.current?.target.copy(target);
     controls.current?.update();
   }, [camera]);
 
@@ -1066,17 +1072,7 @@ export function FarmTwinScene({
         <LampPost env={env} />
       </group>
       <Rain active={env.rainDetected} reducedMotion={reducedMotion} />
-      <StaticGroundShadow />
     </>
-  );
-}
-
-function StaticGroundShadow() {
-  return (
-    <mesh position={[0, -0.65, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={-1}>
-      <circleGeometry args={[4.15, 48]} />
-      <meshBasicMaterial color="#050807" transparent opacity={0.28} depthWrite={false} />
-    </mesh>
   );
 }
 
