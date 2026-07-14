@@ -2,12 +2,63 @@
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  position: relative;
+  isolation: isolate;
+  overflow-x: hidden;
+}
+
+.app-container:not(.app-container--landing)::before,
+.app-container:not(.app-container--landing)::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app-container:not(.app-container--landing)::before {
+  background:
+    linear-gradient(rgba(62, 142, 99, 0.095) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(62, 142, 99, 0.095) 1px, transparent 1px),
+    linear-gradient(rgba(216, 155, 43, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(216, 155, 43, 0.045) 1px, transparent 1px),
+    radial-gradient(circle at 16% 4%, rgba(62, 142, 99, 0.14), transparent 28rem),
+    radial-gradient(circle at 88% 10%, rgba(58, 123, 140, 0.12), transparent 30rem),
+    linear-gradient(180deg, rgba(17, 21, 19, 0.06), rgba(17, 21, 19, 0.72));
+  background-size:
+    72px 72px,
+    72px 72px,
+    288px 288px,
+    288px 288px,
+    auto,
+    auto,
+    auto;
+  background-position:
+    center top,
+    center top,
+    center top,
+    center top,
+    0 0,
+    0 0,
+    0 0;
+}
+
+.app-container:not(.app-container--landing)::after {
+  height: 1px;
+  top: 0;
+  bottom: auto;
+  background: linear-gradient(90deg, transparent, rgba(216, 155, 43, 0.22), rgba(62, 142, 99, 0.2), transparent);
+  box-shadow: 0 0 28px rgba(62, 142, 99, 0.16);
+  opacity: 0.55;
+  animation: app-atmosphere-scan 9s ease-in-out infinite;
 }
 
 .main-content {
   flex: 1;
   padding-top: 6rem;   /* navbar height (4rem) + top offset (1rem) + gap (1rem) */
   padding-bottom: 6rem; /* for floating status bar */
+  position: relative;
+  z-index: 1;
 }
 
 .main-content--landing {
@@ -22,6 +73,22 @@
   max-width: 680px;
 }
 
+@keyframes app-atmosphere-scan {
+  0%, 100% {
+    transform: translateY(12vh);
+    opacity: 0;
+  }
+
+  18%, 72% {
+    opacity: 0.5;
+  }
+
+  50% {
+    transform: translateY(88vh);
+    opacity: 0.32;
+  }
+}
+
 @media (max-width: 1180px) {
   .main-content {
     padding-top: 8.75rem;
@@ -31,6 +98,12 @@
   .main-content--landing {
     padding-top: 0;
     padding-bottom: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-container:not(.app-container--landing)::after {
+    animation: none;
   }
 }
 

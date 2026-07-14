@@ -2,8 +2,17 @@ import { useMemo, useState } from 'react';
 import { Sprout, CheckCircle, BarChart2, Droplets, Zap, AlertTriangle } from 'lucide-react';
 import { predictCrop } from '../lib/api';
 import { useFarmData } from '../context/FarmDataContext';
+import { buildDemoCropPrediction } from '../lib/demoData';
 import { compactValue, cropName, formatValue, MONTHS, nutrientStatus, phStatus, toNumber } from '../lib/farmUtils';
 import './Crop.css';
+
+const growthPhases = [
+  { name: 'Seedling', range: 'Day 0-10' },
+  { name: 'Vegetative', range: 'Pending' },
+  { name: 'Flowering', range: 'Pending' },
+  { name: 'Pod Fill', range: 'Pending' },
+  { name: 'Maturity & Harvest', range: 'Pending' },
+];
 
 function conditionLevel(key, value) {
   if (key === 'ph') return phStatus(value).text;
@@ -65,6 +74,11 @@ function Crop() {
 
     setLoading(true);
     try {
+      if (summary.demoMode) {
+        setPrediction(buildDemoCropPrediction(modelInputs, latest, weather));
+        return;
+      }
+
       const result = await predictCrop(modelInputs);
       if (result.available === false || result.success === false) {
         setPrediction(null);
@@ -92,7 +106,7 @@ function Crop() {
         <div className="crop-planning-phase">
           <div className="panel mb-4">
             <div className="panel-header">
-              <h2 className="panel-title">Current Field Conditions</h2>
+              <h2 className="panel-title">FarmSense AI Field Conditions</h2>
               <span className={`badge ${summary.hasSensor ? 'badge-success' : 'badge-warning'}`}>
                 {summary.hasSensor ? 'Live Sensor Data' : 'Waiting for Sensors'}
               </span>
@@ -199,7 +213,7 @@ function Crop() {
               </div>
 
               <button className="btn btn-primary w-full mt-4" onClick={prediction ? () => setHasPlanted(true) : handlePredict} disabled={loading}>
-                {loading ? 'Calling ML Model...' : prediction ? 'Authorize Deployment' : 'Run Crop Model'}
+                {loading ? 'Calling ML Model...' : prediction ? 'Authorize Deployment' : 'Run FarmSense AI Crop Model'}
               </button>
             </div>
 
@@ -258,7 +272,7 @@ function Crop() {
               <div>
                 <div className="flex items-center gap-3 mb-1">
                   <Sprout size={24} className="text-success" />
-                  <h2 className="font-heading text-xl">Crop Command Center - {selectedCrop}</h2>
+                  <h2 className="font-heading text-xl">FarmSense AI Command Center - {selectedCrop}</h2>
                 </div>
                 <p className="text-muted text-sm">Deployment authorized - Day 0 - {modelInputs.city}</p>
               </div>
@@ -272,14 +286,13 @@ function Crop() {
                 <h2 className="panel-title">Growth Phase Timeline</h2>
               </div>
               <div className="phase-timeline">
-                {['Seedling', 'Vegetative', 'Flowering', 'Pod Fill', 'Maturity & Harvest'].map((phase, index) => (
-                  <div key={phase} className="phase-node active">
+                {growthPhases.map((phase, index) => (
+                  <div key={phase.name} className={`phase-node ${index === 0 ? 'active' : ''}`} aria-current={index === 0 ? 'step' : undefined}>
                     <div className={`phase-dot ${index === 0 ? 'active' : ''}`}></div>
                     <div className="phase-info">
-                      <span className="phase-name">{phase}</span>
-                      <span className="phase-range text-muted">{index === 0 ? 'Day 0-10' : 'Pending'}</span>
+                      <span className="phase-name">{phase.name}</span>
+                      <span className="phase-range text-muted">{phase.range}</span>
                     </div>
-                    {index < 4 && <div className="phase-link"></div>}
                   </div>
                 ))}
               </div>

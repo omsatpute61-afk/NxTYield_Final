@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/immutability */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { ContactShadows, Html, OrbitControls, RoundedBox } from '@react-three/drei';
+import { Html, OrbitControls, RoundedBox } from '@react-three/drei';
 import { Clock, Maximize2, Pause, Play, RotateCcw, Tag, TimerReset } from 'lucide-react';
 import * as THREE from 'three';
 import { compactValue, formatShortTime, hasSensorData, toNumber } from '../lib/farmUtils';
@@ -354,12 +354,19 @@ function SensorDevice({ id, type, position, latest, env, labelsVisible, selected
   return (
     <group
       position={position}
+      onPointerDown={(event) => {
+        event.stopPropagation();
+      }}
+      onPointerMove={(event) => {
+        event.stopPropagation();
+      }}
       onPointerOver={(event) => {
         event.stopPropagation();
         setHovered(true);
         document.body.style.cursor = 'pointer';
       }}
-      onPointerOut={() => {
+      onPointerOut={(event) => {
+        event.stopPropagation();
         setHovered(false);
         document.body.style.cursor = '';
       }}
@@ -1059,8 +1066,17 @@ export function FarmTwinScene({
         <LampPost env={env} />
       </group>
       <Rain active={env.rainDetected} reducedMotion={reducedMotion} />
-      <ContactShadows position={[0, -0.66, 0]} opacity={0.3} scale={8} blur={1.4} far={1.35} frames={1} />
+      <StaticGroundShadow />
     </>
+  );
+}
+
+function StaticGroundShadow() {
+  return (
+    <mesh position={[0, -0.65, 0]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={-1}>
+      <circleGeometry args={[4.15, 48]} />
+      <meshBasicMaterial color="#050807" transparent opacity={0.28} depthWrite={false} />
+    </mesh>
   );
 }
 
@@ -1155,7 +1171,7 @@ export default function DigitalFarmTwin({ latest, weather, insights, summary, co
       <div ref={viewportRef} className="dft-viewport" aria-label="Interactive 3D digital farm twin">
         {canRender ? (
           <Canvas
-            frameloop="demand"
+            frameloop={sceneVisible ? 'always' : 'demand'}
             shadows={{ type: THREE.PCFShadowMap }}
             orthographic
             dpr={[1, 1]}

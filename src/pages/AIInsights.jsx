@@ -70,8 +70,8 @@ function AIInsights() {
   const reportText = summary.hasSensor
     ? insights?.available
       ? `${soil?.summary || 'Soil summary is pending.'} ${crop?.summary || ''}`
-      : insights?.message || insightsError || 'Farm analysis is waiting for the AI insights service.'
-    : 'No data from sensors currently. Connect live sensor readings to generate the farm analysis report.';
+      : insights?.message || insightsError || 'FarmSense AI analysis is waiting for the insights service.'
+    : 'No data from sensors currently. Connect live sensor readings to generate the FarmSense AI analysis report.';
 
   const actions = recommendation?.title
     ? [{ title: recommendation.title, detail: recommendation.detail, impact: 'High Impact', className: 'high', button: 'Review' }]
@@ -95,7 +95,7 @@ function AIInsights() {
       <div className="ai-top-grid mb-4">
         <div className="panel farm-report">
           <div className="panel-header">
-            <h2 className="panel-title">Farm Analysis Report</h2>
+            <h2 className="panel-title">FarmSense AI Analysis Report</h2>
             <span className={`badge ${insightsLoading ? 'badge-warning' : 'badge-success'}`}>
               {insightsLoading ? 'Analyzing' : formatUpdated(latest?.timestamp)}
             </span>
@@ -133,7 +133,7 @@ function AIInsights() {
 
         <div className="panel radar-panel">
           <div className="panel-header">
-            <h2 className="panel-title">Farm Intelligence Matrix</h2>
+            <h2 className="panel-title">FarmSense AI Matrix</h2>
           </div>
           <div className="radar-net-wrap" aria-label="Farm intelligence scores">
             <svg className="radar-net" viewBox="0 0 300 244" role="img" aria-labelledby="radar-title">

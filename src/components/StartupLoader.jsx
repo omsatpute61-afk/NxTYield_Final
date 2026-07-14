@@ -32,7 +32,7 @@ function StartupLoader() {
       </div>
       <div className="startup-loader__copy">
         <span className="startup-loader__brand">NxTYield</span>
-        <span className="startup-loader__caption">Initializing field intelligence</span>
+        <span className="startup-loader__caption">Initializing FarmSense AI</span>
       </div>
     </div>
   );

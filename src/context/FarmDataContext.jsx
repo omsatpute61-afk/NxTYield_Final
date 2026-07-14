@@ -9,12 +9,38 @@ import {
   getWeather,
   openSensorStream,
 } from '../lib/api';
+import {
+  buildDemoChatStatus,
+  buildDemoHealth,
+  buildDemoHistory,
+  buildDemoInsights,
+  buildDemoReading,
+  buildDemoWeather,
+  weatherForDemo,
+} from '../lib/demoData';
 import { calculateHealthScore, getSeason, hasSensorData, hasSensorPacket } from '../lib/farmUtils';
 
 const FarmDataContext = createContext(null);
 const INSIGHTS_COOLDOWN_MS = 120000;
 const MAX_HISTORY = 60;
 const SENSOR_POLL_MS = 5000;
+const DEMO_MODE_STORAGE_KEY = 'nxtyield-demo-mode';
+
+function storedDemoMode() {
+  try {
+    return window.localStorage?.getItem(DEMO_MODE_STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function persistDemoMode(enabled) {
+  try {
+    window.localStorage?.setItem(DEMO_MODE_STORAGE_KEY, enabled ? 'true' : 'false');
+  } catch {
+    // Demo mode remains available for this session if localStorage is blocked.
+  }
+}
 
 function readingKey(reading) {
   if (!reading) return '';
@@ -49,11 +75,29 @@ export function FarmDataProvider({ children }) {
   const [weather, setWeather] = useState(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [weatherError, setWeatherError] = useState('');
+  const [demoMode, setDemoModeState] = useState(storedDemoMode);
+  const [demoTick, setDemoTick] = useState(() => Date.now());
   const lastInsightsFetch = useRef(0);
   const lastReadingKey = useRef('');
 
   const setApiError = useCallback((key, message = '') => {
     setApiErrors((prev) => ({ ...prev, [key]: message }));
+  }, []);
+
+  const setDemoMode = useCallback((enabled) => {
+    const next = Boolean(enabled);
+    persistDemoMode(next);
+    setDemoModeState(next);
+    setDemoTick(Date.now());
+  }, []);
+
+  const toggleDemoMode = useCallback(() => {
+    setDemoModeState((current) => {
+      const next = !current;
+      persistDemoMode(next);
+      return next;
+    });
+    setDemoTick(Date.now());
   }, []);
 
   const applyReading = useCallback((reading) => {
@@ -236,6 +280,13 @@ export function FarmDataProvider({ children }) {
   }, [applyReading, setApiError]);
 
   useEffect(() => {
+    if (!demoMode) return undefined;
+
+    const timer = window.setInterval(() => setDemoTick(Date.now()), SENSOR_POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [demoMode]);
+
+  useEffect(() => {
     if (hasSensorData(latest)) {
       const timer = window.setTimeout(() => refreshInsights(false), 0);
       return () => window.clearTimeout(timer);
@@ -243,48 +294,92 @@ export function FarmDataProvider({ children }) {
     return undefined;
   }, [latest, refreshInsights]);
 
-  const summary = useMemo(() => {
-    const healthScore = calculateHealthScore(latest, insights);
+  const effectiveWeather = useMemo(() => {
+    if (!demoMode) return weather;
+    return weather?.available !== false && weather?.current ? weather : buildDemoWeather(demoTick);
+  }, [demoMode, demoTick, weather]);
+
+  const effectiveLatest = useMemo(() => (
+    demoMode ? buildDemoReading(weatherForDemo(effectiveWeather, demoTick), demoTick) : latest
+  ), [demoMode, demoTick, effectiveWeather, latest]);
+
+  const effectiveHistory = useMemo(() => (
+    demoMode ? buildDemoHistory(weatherForDemo(effectiveWeather, demoTick), MAX_HISTORY, demoTick) : history
+  ), [demoMode, demoTick, effectiveWeather, history]);
+
+  const effectiveInsights = useMemo(() => {
+    if (!demoMode) return insights;
+    if (insights?.available && insights?.soil_health) return insights;
+    return buildDemoInsights(effectiveLatest, effectiveWeather);
+  }, [demoMode, effectiveLatest, effectiveWeather, insights]);
+
+  const effectiveChatStatus = useMemo(() => (
+    demoMode ? buildDemoChatStatus(chatStatus) : chatStatus
+  ), [chatStatus, demoMode]);
+
+  const effectiveConnected = demoMode ? true : connected;
+  const effectiveHealth = demoMode && !health ? buildDemoHealth(effectiveLatest, demoTick) : health;
+  const effectiveApiErrors = useMemo(() => {
+    if (!demoMode) return apiErrors;
     return {
-      connected,
-      backendAvailable: !apiErrors.health,
-      source: latest?.source || 'none',
-      season: getSeason(),
-      hasSensor: hasSensorData(latest),
-      healthScore,
-      demoMode: false,
+      ...apiErrors,
+      sensor: '',
+      history: '',
+      stream: '',
+      health: '',
+      weather: '',
+      insights: '',
+      chat: '',
     };
-  }, [apiErrors.health, connected, insights, latest]);
+  }, [apiErrors, demoMode]);
+
+  const summary = useMemo(() => {
+    const healthScore = calculateHealthScore(effectiveLatest, effectiveInsights);
+    return {
+      connected: effectiveConnected,
+      backendAvailable: demoMode ? true : !effectiveApiErrors.health,
+      source: effectiveLatest?.source || 'none',
+      season: getSeason(),
+      hasSensor: demoMode ? true : hasSensorData(effectiveLatest),
+      healthScore,
+      demoMode,
+    };
+  }, [demoMode, effectiveApiErrors.health, effectiveConnected, effectiveInsights, effectiveLatest]);
 
   const value = useMemo(() => ({
-    latest,
-    history,
-    connected,
-    health,
-    apiErrors,
-    demoMode: false,
-    insights,
-    insightsLoading,
-    insightsError,
-    chatStatus,
-    weather,
-    weatherLoading,
-    weatherError,
+    latest: effectiveLatest,
+    history: effectiveHistory,
+    connected: effectiveConnected,
+    health: effectiveHealth,
+    apiErrors: effectiveApiErrors,
+    demoMode,
+    setDemoMode,
+    toggleDemoMode,
+    insights: effectiveInsights,
+    insightsLoading: demoMode && effectiveInsights?.provider === 'demo' ? false : insightsLoading,
+    insightsError: demoMode ? '' : insightsError,
+    chatStatus: effectiveChatStatus,
+    weather: effectiveWeather,
+    weatherLoading: demoMode ? false : weatherLoading,
+    weatherError: demoMode ? '' : weatherError,
     summary,
     refreshHealth,
     refreshInsights,
     refreshWeather,
   }), [
-    latest,
-    history,
-    connected,
-    health,
-    apiErrors,
-    insights,
+    effectiveLatest,
+    effectiveHistory,
+    effectiveConnected,
+    effectiveHealth,
+    effectiveApiErrors,
+    demoMode,
+    setDemoMode,
+    toggleDemoMode,
+    effectiveInsights,
     insightsLoading,
     insightsError,
-    chatStatus,
-    weather,
+    effectiveChatStatus,
+    effectiveWeather,
     weatherLoading,
     weatherError,
     summary,

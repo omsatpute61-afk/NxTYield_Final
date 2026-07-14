@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Activity, Droplets, CloudSun, Wifi, Sprout, Thermometer, Wind, FlaskConical } from 'lucide-react';
+import { Activity, Droplets, CloudSun, Wifi, Sprout, Thermometer, Wind, FlaskConical, Zap } from 'lucide-react';
 import DigitalFarmTwin from '../components/DigitalFarmTwin';
 import { useFarmData } from '../context/FarmDataContext';
 import {
@@ -171,7 +171,7 @@ function DashboardArrivalTransition() {
       <div className="dashboard-arrival__scan" />
       <div className="dashboard-arrival__mark">
         <img src="/nxtyield-logo.png" alt="" />
-        <span>Dashboard online</span>
+        <span>FarmSense AI online</span>
       </div>
     </div>
   );
@@ -181,6 +181,7 @@ function Home() {
   const { latest, connected, insights, summary, weather, refreshInsights } = useFarmData();
   const [irrigationTimer, setIrrigationTimer] = useState('0');
   const [irrigationRemaining, setIrrigationRemaining] = useState(0);
+  const [irrigationAutoMode, setIrrigationAutoMode] = useState(false);
   const [showArrival, setShowArrival] = useState(false);
   const arrivalRequestedRef = useRef(false);
 
@@ -221,18 +222,41 @@ function Home() {
     else setIrrigationRemaining(0);
   }
 
-  function irrigationTimerStatus(irrigationActive) {
+  function toggleIrrigationAutoMode() {
+    const nextAutoMode = !irrigationAutoMode;
+    setIrrigationAutoMode(nextAutoMode);
+    if (nextAutoMode) {
+      setIrrigationTimer('0');
+      setIrrigationRemaining(0);
+    }
+  }
+
+  function irrigationTimerStatus(irrigationActive, autoMode) {
+    if (autoMode && irrigationActive) return 'AUTO ON';
+    if (autoMode) return 'AUTO';
     if (irrigationActive) return 'RELAY ON';
     if (irrigationTimer === '0') return 'OFF';
     if (irrigationTimer === 'infinity') return 'UNTIL OFF';
     return 'TIMER SET';
   }
 
-  function irrigationTimerDetail(irrigationActive) {
-    if (irrigationActive && irrigationTimer === '0') return 'Telemetry active';
-    if (irrigationTimer === '15' || irrigationTimer === '30') return `${formatTimerRemaining(irrigationRemaining)} remaining`;
-    if (irrigationTimer === 'infinity') return 'No auto shutoff';
-    return undefined;
+  function irrigationTimerDetail(irrigationActive, rainDetected, autoMode, moistureValue) {
+    const moisture = toNumber(moistureValue);
+
+    if (autoMode) {
+      if (rainDetected) return 'Auto holding - currently raining';
+      if (irrigationActive) return 'Auto active - relay responding to sensor threshold';
+      if (moisture !== null && moisture < 40) return `Auto ready - moisture ${compactValue(moisture)}%`;
+      return 'Auto monitoring moisture, rain and relay state';
+    }
+
+    let detail;
+    if (irrigationActive && irrigationTimer === '0') detail = 'Telemetry active';
+    else if (irrigationTimer === '15' || irrigationTimer === '30') detail = `${formatTimerRemaining(irrigationRemaining)} remaining`;
+    else if (irrigationTimer === 'infinity') detail = 'No auto shutoff';
+
+    if (rainDetected) return detail ? `Currently raining - ${detail}` : 'Currently raining - rain sensor active';
+    return detail;
   }
 
   const sensorData = buildSensorData(latest);
@@ -246,8 +270,9 @@ function Home() {
   const networkStatus = connected ? 'UP' : 'WAIT';
   const alerts = buildAlerts(latest, insights, connected);
   const irrigationActive = latest?.irrigation_active === true;
-  const irrigationDisplay = irrigationTimerStatus(irrigationActive);
-  const irrigationDetail = irrigationTimerDetail(irrigationActive);
+  const rainDetected = latest?.rain_detected === true;
+  const irrigationDisplay = irrigationTimerStatus(irrigationActive, irrigationAutoMode);
+  const irrigationDetail = irrigationTimerDetail(irrigationActive, rainDetected, irrigationAutoMode, latest?.moisture);
 
   return (
     <div className={`container page-home ${showArrival ? 'page-home--arriving' : ''}`}>
@@ -305,7 +330,7 @@ function Home() {
 
         <div className="panel digital-twin">
           <div className="panel-header">
-            <h2 className="panel-title">Digital Farm Twin</h2>
+            <h2 className="panel-title">FarmSense AI Digital Twin</h2>
             <div className={`badge ${connected ? 'badge-success' : 'badge-warning'}`}>{connected ? 'Live Tracking' : 'Waiting'}</div>
           </div>
           <DigitalFarmTwin
@@ -340,9 +365,24 @@ function Home() {
           <div className="irrigation-control">
             <div className="irr-header">
               <span className="irr-label">Irrigation Timer</span>
-              <span className={`irr-val ${irrigationActive || irrigationTimer !== '0' ? 'active' : ''}`}>
+              <span className={`irr-val ${irrigationAutoMode || irrigationActive || irrigationTimer !== '0' ? 'active' : ''}`}>
                 {irrigationDisplay}
               </span>
+            </div>
+            <div className="irr-auto-row">
+              <div className="irr-auto-copy">
+                <span><Zap size={14} aria-hidden="true" /> Auto mode</span>
+                <small>FarmSense AI supervises watering thresholds</small>
+              </div>
+              <button
+                type="button"
+                className={`irr-auto-toggle ${irrigationAutoMode ? 'is-on' : ''}`}
+                aria-label={irrigationAutoMode ? 'Disable irrigation auto mode' : 'Enable irrigation auto mode'}
+                aria-pressed={irrigationAutoMode}
+                onClick={toggleIrrigationAutoMode}
+              >
+                <span className="irr-auto-thumb" aria-hidden="true" />
+              </button>
             </div>
             <div className="irr-options" role="group" aria-label="Irrigation timer presets">
               {irrigationTimerOptions.map((option) => (
@@ -351,16 +391,17 @@ function Home() {
                   key={option.value}
                   className={`irr-option ${irrigationTimer === option.value ? 'active' : ''}`}
                   onClick={() => selectIrrigationTimer(option.value)}
+                  disabled={irrigationAutoMode}
                 >
                   <span>{option.label}</span>
                   <small>{option.detail}</small>
                 </button>
               ))}
             </div>
-            <div className="irr-timer-detail">{irrigationDetail || 'Relay off'}</div>
+            <div className={`irr-timer-detail ${rainDetected ? 'text-warning' : ''}`}>{irrigationDetail || 'Relay off'}</div>
           </div>
 
-          <button className="btn btn-accent w-full mt-3" onClick={() => refreshInsights(true)}>Run Full Diagnostic</button>
+          <button className="btn btn-accent w-full mt-3" onClick={() => refreshInsights(true)}>Run FarmSense AI Diagnostic</button>
         </div>
       </div>
 

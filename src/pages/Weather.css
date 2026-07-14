@@ -4,7 +4,9 @@
 }
 
 .weather-hero {
-  background: linear-gradient(135deg, var(--bg-panel) 60%, rgba(216, 155, 43, 0.05) 100%);
+  background:
+    radial-gradient(circle at 12% 20%, rgba(216, 155, 43, 0.12), transparent 18rem),
+    linear-gradient(135deg, rgba(25, 32, 28, 0.9) 56%, rgba(58, 123, 140, 0.08) 100%);
 }
 
 .weather-main {
@@ -37,8 +39,8 @@
 .w-metrics-grid {
   display: flex;
   gap: 1px;
-  background-color: var(--border-color);
-  border: 1px solid var(--border-color);
+  background-color: rgba(58, 74, 65, 0.72);
+  border: 1px solid rgba(58, 74, 65, 0.78);
   border-radius: var(--radius-md);
   overflow: hidden;
 }
@@ -49,7 +51,9 @@
   align-items: center;
   gap: 0.35rem;
   padding: 1.25rem 1rem;
-  background-color: var(--bg-panel);
+  background:
+    linear-gradient(145deg, rgba(62, 142, 99, 0.035), transparent 62%),
+    rgba(17, 21, 19, 0.42);
   flex: 1;
 }
 
@@ -83,7 +87,8 @@
   display: flex;
   justify-content: space-between;
   gap: 1px;
-  background-color: var(--border-color);
+  background-color: rgba(58, 74, 65, 0.72);
+  border: 1px solid rgba(58, 74, 65, 0.78);
   border-radius: var(--radius-sm);
   overflow: hidden;
 }
@@ -95,12 +100,12 @@
   gap: 0.35rem;
   flex: 1;
   padding: 1rem 0.5rem;
-  background-color: var(--bg-surface);
+  background-color: rgba(17, 21, 19, 0.46);
   transition: background-color 0.2s;
 }
 
 .ribbon-node:hover, .ribbon-node.active {
-  background-color: var(--bg-surface-light);
+  background-color: rgba(42, 54, 48, 0.72);
 }
 
 .r-day {
@@ -191,8 +196,10 @@
 
 .rec-matrix-item {
   padding: 1rem;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-surface);
+  border: 1px solid rgba(58, 74, 65, 0.76);
+  background:
+    linear-gradient(145deg, rgba(62, 142, 99, 0.035), transparent 60%),
+    rgba(17, 21, 19, 0.42);
   border-radius: var(--radius-sm);
   transition: border-color 0.2s;
 }

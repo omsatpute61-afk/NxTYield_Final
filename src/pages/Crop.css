@@ -8,8 +8,8 @@
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 1px;
-  background-color: var(--border-color);
-  border: 1px solid var(--border-color);
+  background-color: rgba(58, 74, 65, 0.72);
+  border: 1px solid rgba(58, 74, 65, 0.78);
   border-radius: var(--radius-sm);
   overflow: hidden;
 }
@@ -18,14 +18,16 @@
   display: flex;
   flex-direction: column;
   padding: 1rem;
-  background-color: var(--bg-surface);
+  background:
+    linear-gradient(145deg, rgba(62, 142, 99, 0.035), transparent 62%),
+    rgba(17, 21, 19, 0.44);
   gap: 0.25rem;
   animation: crop-node-in 360ms ease both;
   transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
 .condition-node:hover {
-  background-color: var(--bg-surface-light);
+  background-color: rgba(42, 54, 48, 0.72);
   transform: translateY(-2px);
 }
 
@@ -46,9 +48,9 @@
 
 .month-select {
   width: 100%;
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(58, 74, 65, 0.78);
   border-radius: var(--radius-sm);
-  background-color: var(--bg-panel);
+  background-color: rgba(17, 21, 19, 0.52);
   color: var(--text-main);
   font-family: var(--font-heading);
   font-size: 1rem;
@@ -88,6 +90,9 @@
 
 .crop-card.recommended {
   border-color: rgba(62, 142, 99, 0.4);
+  background:
+    linear-gradient(145deg, rgba(62, 142, 99, 0.08), transparent 54%),
+    var(--panel-glass);
 }
 
 .crop-card-header {
@@ -189,16 +194,33 @@
 
 /* Phase Timeline */
 .phase-timeline {
-  display: flex;
-  align-items: center;
-  padding: 1.5rem 0;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  align-items: start;
+  width: 100%;
+  padding: 1.5rem 0 0.35rem;
+}
+
+.phase-timeline::before {
+  content: '';
+  position: absolute;
+  top: calc(1.5rem + 7px);
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(58, 74, 65, 0.76), rgba(62, 142, 99, 0.34), rgba(58, 74, 65, 0.76));
 }
 
 .phase-node {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.75rem;
+  text-align: center;
 }
 
 .phase-dot {
@@ -216,6 +238,8 @@
 }
 
 .phase-info {
+  width: 100%;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -223,10 +247,11 @@
 }
 
 .phase-name {
+  max-width: 8.4rem;
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--text-muted);
-  white-space: nowrap;
+  line-height: 1.2;
 }
 
 .phase-range {
@@ -236,14 +261,6 @@
 
 .phase-node.active .phase-name {
   color: var(--color-success);
-}
-
-.phase-link {
-  flex: 1;
-  height: 2px;
-  background-color: var(--border-color);
-  margin: 0 0.5rem;
-  margin-bottom: 2rem;
 }
 
 /* Targets Panel */
@@ -258,9 +275,11 @@
   align-items: center;
   gap: 1rem;
   padding: 0.75rem;
-  background-color: var(--bg-surface);
+  background:
+    linear-gradient(145deg, rgba(62, 142, 99, 0.035), transparent 62%),
+    rgba(17, 21, 19, 0.42);
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(58, 74, 65, 0.76);
 }
 
 .target-row.warning-row {
@@ -376,18 +395,14 @@
   }
 
   .phase-timeline {
-    align-items: flex-start;
+    grid-template-columns: repeat(5, minmax(112px, 1fr));
     overflow-x: auto;
     padding-bottom: 0.75rem;
     scrollbar-width: thin;
   }
 
   .phase-node {
-    min-width: 108px;
-  }
-
-  .phase-link {
-    min-width: 44px;
+    min-width: 0;
   }
 
   .target-row,

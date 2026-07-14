@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Activity, Droplets, Thermometer, CloudRain, ShieldAlert, Sprout, Send, MessageSquare, Bot } from 'lucide-react';
 import { sendChatMessage } from '../lib/api';
 import { useFarmData } from '../context/FarmDataContext';
+import { buildDemoAssistantReply } from '../lib/demoData';
 import { compactValue, formatShortTime } from '../lib/farmUtils';
 import './ChatAssistant.css';
 
@@ -21,19 +22,21 @@ function renderLines(content) {
 }
 
 function ChatAssistant() {
-  const { latest, summary, chatStatus, weather } = useFarmData();
+  const { latest, summary, chatStatus, weather, insights } = useFarmData();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const endRef = useRef(null);
 
   useEffect(() => {
-    const providerText = chatStatus?.llm_enabled
+    const providerText = summary.demoMode && !chatStatus?.llm_enabled
+      ? 'I am using the demo fallback assistant with FarmSense AI sample telemetry.'
+      : chatStatus?.llm_enabled
       ? `I am connected to ${chatStatus.provider} and can use your live soil readings.`
       : 'AI API not available. I can answer basic sensor-based questions with local rules.';
     const greeting = {
       role: 'assistant',
-      content: `Hello. ${providerText}`,
+      content: `Hello. FarmSense AI is online. ${providerText}`,
     };
 
     setMessages((current) => {
@@ -43,7 +46,7 @@ function ChatAssistant() {
       }
       return current;
     });
-  }, [chatStatus?.llm_enabled, chatStatus?.provider]);
+  }, [chatStatus?.llm_enabled, chatStatus?.provider, summary.demoMode]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -59,6 +62,15 @@ function ChatAssistant() {
     setSending(true);
 
     try {
+      if (summary.demoMode && !chatStatus?.llm_enabled) {
+        setMessages((prev) => [...prev, {
+          role: 'assistant',
+          content: buildDemoAssistantReply(q, latest, weather, insights),
+          provider: 'demo',
+        }]);
+        return;
+      }
+
       const history = nextMessages
         .slice(-10)
         .map((msg) => ({ role: msg.role, content: msg.content }));
@@ -114,7 +126,7 @@ function ChatAssistant() {
           <div className="panel-header">
             <div className="flex items-center gap-2">
               <Bot size={18} className="text-success" />
-              <h2 className="panel-title" style={{ marginBottom: 0 }}>NxTYield AI Copilot</h2>
+              <h2 className="panel-title" style={{ marginBottom: 0 }}>FarmSense AI Copilot</h2>
             </div>
             <div className={`badge ${summary.hasSensor ? 'badge-success' : 'badge-warning'}`}>
               {summary.hasSensor ? 'Farm Context Active' : 'Waiting for Context'}
@@ -176,9 +188,9 @@ function ChatAssistant() {
 
         <div className="panel context-panel">
           <div className="panel-header">
-            <h2 className="panel-title">Live Farm Context</h2>
+            <h2 className="panel-title">FarmSense AI Context</h2>
           </div>
-          <p className="ctx-sub text-muted">AI receives current sensor readings from the backend</p>
+          <p className="ctx-sub text-muted">FarmSense AI receives current sensor readings from the backend</p>
 
           <div className="ctx-grid mt-3">
             <div className="ctx-row">

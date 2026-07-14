@@ -7,7 +7,12 @@
   z-index: 1000;
   padding: 0;
   border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
+  border: 1px solid rgba(58, 74, 65, 0.92);
+  background:
+    linear-gradient(145deg, rgba(62, 142, 99, 0.055), transparent 52%),
+    rgba(25, 32, 28, 0.88);
+  box-shadow: 0 14px 38px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(14px);
 }
 
 .navbar-container {
@@ -26,6 +31,7 @@
   font-weight: 600;
   font-size: 1.25rem;
   letter-spacing: 0;
+  color: var(--text-main);
 }
 
 .logo-icon {
@@ -47,27 +53,33 @@
   font-size: 0.875rem;
   font-weight: 500;
   padding: 0.5rem 0.75rem;
-  transition: color 0.2s;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s;
   position: relative;
   white-space: nowrap;
 }
 
 .nav-link:hover {
   color: var(--text-main);
+  border-color: rgba(62, 142, 99, 0.16);
+  background-color: rgba(62, 142, 99, 0.07);
 }
 
 .nav-link.active {
-  color: var(--color-success);
+  color: var(--text-main);
+  border-color: rgba(62, 142, 99, 0.32);
+  background-color: rgba(62, 142, 99, 0.12);
 }
 
 .nav-link.active::after {
   content: '';
   position: absolute;
-  bottom: 0;
-  left: 10%;
-  right: 10%;
-  height: 2px;
-  background-color: var(--color-success);
+  bottom: 0.18rem;
+  left: 0.55rem;
+  right: 0.55rem;
+  height: 1px;
+  background: linear-gradient(90deg, var(--color-amber), var(--color-success));
 }
 
 .navbar-context {
@@ -83,23 +95,29 @@
 }
 
 .context-label {
-  font-family: var(--font-primary);
+  font-family: var(--font-mono);
   font-size: 0.65rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--color-amber);
   text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .live-indicator {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  background-color: rgba(17, 21, 19, 0.62);
+  border: 1px solid rgba(62, 142, 99, 0.28);
   border-radius: var(--radius-sm);
   padding: 0.35rem 0.75rem;
   font-size: 0.75rem;
   color: var(--text-main);
+}
+
+.live-indicator.demo {
+  border-color: rgba(216, 155, 43, 0.42);
+  color: var(--color-amber);
 }
 
 .pulse-dot {

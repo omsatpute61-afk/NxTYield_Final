@@ -7,7 +7,7 @@ function FloatingStatus() {
   const { latest, summary, chatStatus } = useFarmData();
   const health = summary.healthScore === null ? '--' : summary.healthScore.toFixed(1);
   const moisture = compactValue(latest?.moisture);
-  const aiStatus = chatStatus?.llm_enabled ? chatStatus.provider : 'API not available';
+  const aiStatus = chatStatus?.llm_enabled || summary.demoMode ? chatStatus?.provider : 'API not available';
 
   return (
     <div className="floating-status panel">
@@ -32,7 +32,7 @@ function FloatingStatus() {
         <div className="status-divider"></div>
         <div className="status-item">
           <Cpu size={16} className="text-success" />
-          <span className="fs-label">AI Agent:</span>
+          <span className="fs-label">FarmSense AI:</span>
           <span className="fs-val text-success">{aiStatus}</span>
         </div>
       </div>

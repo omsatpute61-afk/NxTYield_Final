@@ -9,6 +9,7 @@
   
   --border-color: #2D3A33;
   --border-highlight: #3A4A41;
+  --panel-glass: rgba(25, 32, 28, 0.84);
 
   /* Agricultural / Industrial Colors */
   --color-primary: #1E4D3D; /* Deep Forest Green */
@@ -34,7 +35,7 @@
   
   /* Shadows - Soft and purposeful, NOT glowing */
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
-  --shadow-panel: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-panel: 0 14px 36px rgba(0, 0, 0, 0.34);
 }
 
 * {
@@ -52,11 +53,12 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   
-  /* Subtle, realistic topo background (much lower opacity) */
-  background-image: 
-    linear-gradient(rgba(45, 58, 51, 0.2) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(45, 58, 51, 0.2) 1px, transparent 1px);
-  background-size: 60px 60px;
+  background-image:
+    radial-gradient(circle at 18% 0%, rgba(62, 142, 99, 0.12), transparent 30rem),
+    radial-gradient(circle at 82% 8%, rgba(216, 155, 43, 0.07), transparent 24rem),
+    linear-gradient(rgba(45, 58, 51, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45, 58, 51, 0.16) 1px, transparent 1px);
+  background-size: auto, auto, 72px 72px, 72px 72px;
   background-attachment: fixed;
 }
 
@@ -112,20 +114,36 @@ svg {
 
 /* Professional Panel Component */
 .panel {
-  background-color: var(--bg-panel);
-  border: 1px solid var(--border-color);
+  background:
+    linear-gradient(145deg, rgba(62, 142, 99, 0.045), transparent 46%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), transparent 36%),
+    var(--panel-glass);
+  border: 1px solid rgba(58, 74, 65, 0.88);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-panel);
   padding: 1.5rem;
   position: relative;
   overflow: hidden;
   min-width: 0;
+  backdrop-filter: blur(10px);
+}
+
+.panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(216, 155, 43, 0.38), rgba(62, 142, 99, 0.32), transparent);
+  opacity: 0.62;
+  pointer-events: none;
 }
 
 .panel-header {
   margin-bottom: 1.5rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid rgba(58, 74, 65, 0.74);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -135,10 +153,23 @@ svg {
 .panel-title {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--text-muted);
+  color: var(--text-main);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin-bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.panel-title::before {
+  content: '';
+  width: 0.44rem;
+  height: 0.44rem;
+  flex: 0 0 auto;
+  border: 1px solid var(--color-amber);
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(216, 155, 43, 0.18);
 }
 
 /* Buttons */
@@ -155,14 +186,17 @@ svg {
 }
 
 .btn-primary {
-  background-color: var(--color-primary);
+  background:
+    linear-gradient(180deg, rgba(62, 142, 99, 0.95), rgba(30, 77, 61, 0.95));
   color: var(--text-main);
-  border: 1px solid #28634F;
+  border: 1px solid rgba(62, 142, 99, 0.72);
   box-shadow: var(--shadow-sm);
 }
 
 .btn-primary:hover {
-  background-color: #245A48;
+  background:
+    linear-gradient(180deg, rgba(72, 158, 112, 0.98), rgba(36, 90, 72, 0.98));
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
 }
 
 .btn-accent {
@@ -173,6 +207,7 @@ svg {
 
 .btn-accent:hover {
   background-color: rgba(216, 155, 43, 0.1);
+  box-shadow: 0 0 0 2px rgba(216, 155, 43, 0.08);
 }
 
 .btn-danger {
@@ -201,6 +236,8 @@ svg {
   font-weight: 500;
   min-width: 0;
   max-width: 100%;
+  background-color: rgba(17, 21, 19, 0.42);
+  border: 1px solid rgba(58, 74, 65, 0.72);
 }
 
 .badge-success {
