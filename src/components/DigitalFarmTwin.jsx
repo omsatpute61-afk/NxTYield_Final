@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/immutability */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Html, OrbitControls, RoundedBox } from '@react-three/drei';
+import { OrbitControls, RoundedBox } from '@react-three/drei';
 import { Clock, Maximize2, Pause, Play, RotateCcw, Tag, TimerReset } from 'lucide-react';
 import * as THREE from 'three';
 import { compactValue, formatShortTime, hasSensorData, toNumber } from '../lib/farmUtils';
@@ -343,12 +343,11 @@ function sensorData(latest, id) {
   return { label: 'Weather station', value: toNumber(latest?.air_temperature), unit: 'C air' };
 }
 
-function SensorDevice({ id, type, position, latest, env, labelsVisible, selected, onSelect }) {
+function SensorDevice({ id, type, position, latest, env, selected, onSelect, onHover }) {
   const [hovered, setHovered] = useState(false);
   const data = sensorData(latest, id);
   const hasValue = data.value !== null && data.value !== undefined && data.value !== '';
   const warning = !hasValue || (id === 'npk' && env.nutrientIssues.length > 0);
-  const showLabel = hovered || labelsVisible || selected;
   const ledColor = hasValue ? (warning ? '#d89b2b' : '#4caf75') : '#6d746f';
 
   return (
@@ -363,11 +362,13 @@ function SensorDevice({ id, type, position, latest, env, labelsVisible, selected
       onPointerOver={(event) => {
         event.stopPropagation();
         setHovered(true);
+        onHover(id);
         document.body.style.cursor = 'pointer';
       }}
       onPointerOut={(event) => {
         event.stopPropagation();
         setHovered(false);
+        onHover('');
         document.body.style.cursor = '';
       }}
       onClick={(event) => {
@@ -381,7 +382,7 @@ function SensorDevice({ id, type, position, latest, env, labelsVisible, selected
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.055, 0]} receiveShadow>
         <circleGeometry args={[0.25, 18]} />
-        <meshBasicMaterial color={warning ? '#5a3a13' : '#17382d'} transparent opacity={0.55} />
+        <meshBasicMaterial color={warning ? '#5a3a13' : '#17382d'} transparent opacity={hovered || selected ? 0.78 : 0.55} />
       </mesh>
       <RoundedBox args={[0.28, 0.22, 0.24]} radius={0.035} smoothness={2} position={[0, 0.27, 0]}>
         <meshStandardMaterial color="#202824" roughness={0.55} metalness={0.18} />
@@ -413,19 +414,11 @@ function SensorDevice({ id, type, position, latest, env, labelsVisible, selected
           </mesh>
         </>
       )}
-      {showLabel && (
-        <Html center distanceFactor={5.6} position={[0, 0.78, 0]} className="dft-tooltip-wrap">
-          <div className="dft-tooltip">
-            <strong>{data.label}</strong>
-            <span>{hasValue ? `${data.value} ${data.unit}` : 'Waiting for sensor data'}</span>
-          </div>
-        </Html>
-      )}
     </group>
   );
 }
 
-function FarmSensors({ env, latest, labelsVisible, selectedSensor, onSelectSensor }) {
+function FarmSensors({ env, latest, selectedSensor, onSelectSensor, onHoverSensor }) {
   const sensors = [
     { id: 'moisture', type: 'probe', position: [-2.45, 0.12, -1.1] },
     { id: 'npk', type: 'probe', position: [2.3, 0.12, 1.05] },
@@ -438,9 +431,9 @@ function FarmSensors({ env, latest, labelsVisible, selectedSensor, onSelectSenso
       {...sensor}
       env={env}
       latest={latest}
-      labelsVisible={labelsVisible}
       selected={selectedSensor === sensor.id}
       onSelect={onSelectSensor}
+      onHover={onHoverSensor}
     />
   ));
 }
@@ -1040,9 +1033,9 @@ function LandingCamera({ progress = 0, parallax = { x: 0, y: 0 } }) {
 export function FarmTwinScene({
   env,
   latest = null,
-  labelsVisible = false,
   selectedSensor = '',
   onSelectSensor = () => {},
+  onHoverSensor = () => {},
   reducedMotion = false,
   sceneActive = true,
   cameraMode = 'dashboard',
@@ -1068,7 +1061,7 @@ export function FarmTwinScene({
         <FarmerHut />
         {cameraMode === 'landing' && <FarmerFertilizerAction storyProgress={storyProgress} reducedMotion={reducedMotion} />}
         <IrrigationSystem env={env} reducedMotion={reducedMotion} />
-        <FarmSensors env={env} latest={latest} labelsVisible={labelsVisible} selectedSensor={selectedSensor} onSelectSensor={onSelectSensor} />
+        <FarmSensors env={env} latest={latest} selectedSensor={selectedSensor} onSelectSensor={onSelectSensor} onHoverSensor={onHoverSensor} />
         <LampPost env={env} />
       </group>
       <Rain active={env.rainDetected} reducedMotion={reducedMotion} />
@@ -1101,12 +1094,18 @@ function WindCompass({ env }) {
   );
 }
 
-function StatusStrip({ env, selectedSensor }) {
+function StatusStrip({ env, latest, selectedSensor, hoveredSensor }) {
   const updated = env.updatedAt ? formatShortTime(env.updatedAt) : 'waiting';
   const wind = env.windSpeed === null ? 'Wind waiting' : `Wind ${compactValue(env.windSpeed, 1)} km/h`;
-  const status = selectedSensor
-    ? `Sensor ${selectedSensor.replace(/_/g, ' ')} selected`
-    : `Moisture ${compactValue(env.moisture)}% | ${env.irrigationActive ? 'Irrigation Active' : 'Irrigation Off'} | Crop: ${env.cropName} | ${wind} | Updated ${updated}`;
+  const hovered = hoveredSensor ? sensorData(latest, hoveredSensor) : null;
+  const hoveredValue = hovered && hovered.value !== null && hovered.value !== undefined && hovered.value !== ''
+    ? `${hovered.value} ${hovered.unit}`
+    : 'Waiting for sensor data';
+  const status = hovered
+    ? `${hovered.label}: ${hoveredValue}`
+    : selectedSensor
+      ? `Sensor ${selectedSensor.replace(/_/g, ' ')} selected`
+      : `Moisture ${compactValue(env.moisture)}% | ${env.irrigationActive ? 'Irrigation Active' : 'Irrigation Off'} | Crop: ${env.cropName} | ${wind} | Updated ${updated}`;
   return <div className="dft-status-strip">{status}</div>;
 }
 
@@ -1142,6 +1141,7 @@ export default function DigitalFarmTwin({ latest, weather, insights, summary, co
   const [paused, setPaused] = useState(false);
   const [labelsVisible, setLabelsVisible] = useState(false);
   const [selectedSensor, setSelectedSensor] = useState('');
+  const [hoveredSensor, setHoveredSensor] = useState('');
   const [canvasError, setCanvasError] = useState(false);
   const reducedMotion = useReducedMotion();
   const sceneVisible = useInViewport(viewportRef);
@@ -1183,9 +1183,9 @@ export default function DigitalFarmTwin({ latest, weather, insights, summary, co
             <FarmTwinScene
               env={env}
               latest={latest}
-              labelsVisible={labelsVisible}
               selectedSensor={selectedSensor}
               onSelectSensor={setSelectedSensor}
+              onHoverSensor={setHoveredSensor}
               reducedMotion={reducedMotion}
               sceneActive={sceneVisible}
             />
@@ -1210,7 +1210,7 @@ export default function DigitalFarmTwin({ latest, weather, insights, summary, co
         <div className="dft-time-chip">{env.timeLabel}</div>
         <WindCompass env={env} />
         <SensorLabelOverlay latest={latest} env={env} visible={labelsVisible} />
-        <StatusStrip env={env} selectedSensor={selectedSensor} />
+        <StatusStrip env={env} latest={latest} selectedSensor={selectedSensor} hoveredSensor={hoveredSensor} />
       </div>
       <div className={`dft-live-dot ${connected ? 'is-live' : ''}`} aria-hidden="true" />
     </div>

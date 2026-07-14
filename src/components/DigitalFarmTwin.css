@@ -241,34 +241,6 @@
   border-color: rgba(216, 155, 43, 0.34);
 }
 
-.dft-tooltip-wrap {
-  pointer-events: none;
-}
-
-.dft-tooltip {
-  display: flex;
-  flex-direction: column;
-  gap: 0.14rem;
-  min-width: 8.5rem;
-  color: var(--text-main);
-  background-color: rgba(17, 21, 19, 0.92);
-  border: 1px solid rgba(62, 142, 99, 0.45);
-  border-radius: var(--radius-sm);
-  padding: 0.48rem 0.55rem;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.32);
-  font-size: 0.72rem;
-}
-
-.dft-tooltip strong {
-  font-family: var(--font-heading);
-  font-size: 0.72rem;
-  color: var(--text-main);
-}
-
-.dft-tooltip span {
-  color: var(--text-muted);
-}
-
 .dft-fallback {
   width: 100%;
   min-height: 340px;
