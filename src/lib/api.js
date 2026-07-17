@@ -71,8 +71,8 @@ function normalizeSensorPayload(payload, fallbackSource = 'hardware') {
     nitrogen: data.nitrogen ?? data.N ?? null,
     phosphorus: data.phosphorus ?? data.P ?? null,
     potassium: data.potassium ?? data.K ?? null,
-    moisture: data.moisture ?? data.soil_moisture ?? null,
-    ph: data.ph ?? data.pH ?? null,
+    moisture: data.moisture ?? data.soil_moisture ?? data.soilMoisture ?? null,
+    ph: data.ph ?? data.pH ?? data.soil_ph ?? data.soil_pH ?? data.soilPh ?? null,
     soil_temperature: data.soil_temperature ?? data.soilTemperature ?? null,
     air_temperature: data.air_temperature ?? data.airTemperature ?? data.temperature ?? null,
     humidity: data.humidity ?? null,
@@ -123,6 +123,17 @@ export function sendChatMessage(message, history, sensor) {
 export function getWeather(city = 'Pune,IN') {
   const params = new URLSearchParams({ city });
   return fetchJson(`/api/weather?${params.toString()}`);
+}
+
+export function getRemoteIrrigation() {
+  return fetchJson('/api/irrigation/remote');
+}
+
+export function setRemoteIrrigation(enabled) {
+  return fetchJson('/api/irrigation/remote', {
+    method: 'POST',
+    body: JSON.stringify({ enabled: Boolean(enabled) }),
+  });
 }
 
 export async function predictCrop(payload) {

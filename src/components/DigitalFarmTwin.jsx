@@ -343,6 +343,20 @@ function sensorData(latest, id) {
   return { label: 'Weather station', value: toNumber(latest?.air_temperature), unit: 'C air' };
 }
 
+function sensorValueText(sensor) {
+  if (!sensor || sensor.value === null || sensor.value === undefined || sensor.value === '') return 'Waiting for sensor data';
+  return `${sensor.value} ${sensor.unit}`;
+}
+
+function hoverPayload(id, event) {
+  const source = event.sourceEvent || event.nativeEvent || {};
+  return {
+    id,
+    x: typeof source.offsetX === 'number' ? source.offsetX : null,
+    y: typeof source.offsetY === 'number' ? source.offsetY : null,
+  };
+}
+
 function SensorDevice({ id, type, position, latest, env, selected, onSelect, onHover }) {
   const [hovered, setHovered] = useState(false);
   const data = sensorData(latest, id);
@@ -358,17 +372,18 @@ function SensorDevice({ id, type, position, latest, env, selected, onSelect, onH
       }}
       onPointerMove={(event) => {
         event.stopPropagation();
+        if (hovered) onHover(hoverPayload(id, event));
       }}
       onPointerOver={(event) => {
         event.stopPropagation();
         setHovered(true);
-        onHover(id);
+        onHover(hoverPayload(id, event));
         document.body.style.cursor = 'pointer';
       }}
       onPointerOut={(event) => {
         event.stopPropagation();
         setHovered(false);
-        onHover('');
+        onHover(null);
         document.body.style.cursor = '';
       }}
       onClick={(event) => {
@@ -1097,16 +1112,29 @@ function WindCompass({ env }) {
 function StatusStrip({ env, latest, selectedSensor, hoveredSensor }) {
   const updated = env.updatedAt ? formatShortTime(env.updatedAt) : 'waiting';
   const wind = env.windSpeed === null ? 'Wind waiting' : `Wind ${compactValue(env.windSpeed, 1)} km/h`;
-  const hovered = hoveredSensor ? sensorData(latest, hoveredSensor) : null;
-  const hoveredValue = hovered && hovered.value !== null && hovered.value !== undefined && hovered.value !== ''
-    ? `${hovered.value} ${hovered.unit}`
-    : 'Waiting for sensor data';
+  const hovered = hoveredSensor?.id ? sensorData(latest, hoveredSensor.id) : null;
+  const hoveredValue = sensorValueText(hovered);
   const status = hovered
     ? `${hovered.label}: ${hoveredValue}`
     : selectedSensor
       ? `Sensor ${selectedSensor.replace(/_/g, ' ')} selected`
       : `Moisture ${compactValue(env.moisture)}% | ${env.irrigationActive ? 'Irrigation Active' : 'Irrigation Off'} | Crop: ${env.cropName} | ${wind} | Updated ${updated}`;
   return <div className="dft-status-strip">{status}</div>;
+}
+
+function SensorHoverTooltip({ latest, hoveredSensor }) {
+  if (!hoveredSensor?.id) return null;
+
+  const data = sensorData(latest, hoveredSensor.id);
+  const x = hoveredSensor.x === null ? '50%' : `clamp(0.75rem, ${hoveredSensor.x + 18}px, calc(100% - 11rem))`;
+  const y = hoveredSensor.y === null ? '50%' : `clamp(4.2rem, ${hoveredSensor.y - 8}px, calc(100% - 4rem))`;
+
+  return (
+    <div className="dft-hover-card" style={{ left: x, top: y }}>
+      <strong>{data.label}</strong>
+      <span>{sensorValueText(data)}</span>
+    </div>
+  );
 }
 
 function SensorLabelOverlay({ latest, env, visible }) {
@@ -1141,7 +1169,7 @@ export default function DigitalFarmTwin({ latest, weather, insights, summary, co
   const [paused, setPaused] = useState(false);
   const [labelsVisible, setLabelsVisible] = useState(false);
   const [selectedSensor, setSelectedSensor] = useState('');
-  const [hoveredSensor, setHoveredSensor] = useState('');
+  const [hoveredSensor, setHoveredSensor] = useState(null);
   const [canvasError, setCanvasError] = useState(false);
   const reducedMotion = useReducedMotion();
   const sceneVisible = useInViewport(viewportRef);
@@ -1195,6 +1223,7 @@ export default function DigitalFarmTwin({ latest, weather, insights, summary, co
         )}
 
         {!env.hasSensor && mode !== 'demo' && <div className="dft-waiting">Waiting for sensor data</div>}
+        <SensorHoverTooltip latest={latest} hoveredSensor={hoveredSensor} />
 
         <div className="dft-controls" aria-label="Digital farm twin controls">
           <button type="button" className={mode === 'live' ? 'active' : ''} onClick={() => setMode('live')} aria-label="Use live time"><Clock size={18} aria-hidden="true" /><span>Live</span></button>

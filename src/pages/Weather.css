@@ -22,9 +22,38 @@
   gap: 1.5rem;
 }
 
-.sun-icon {
-  color: var(--color-amber);
+.weather-condition-icon {
   flex-shrink: 0;
+  filter: drop-shadow(0 0 12px currentColor);
+}
+
+.weather-condition-icon--sun,
+.weather-condition-icon--partly {
+  color: var(--color-amber);
+}
+
+.weather-condition-icon--cloud {
+  color: #a9b8bd;
+}
+
+.weather-condition-icon--rain {
+  color: var(--color-blue);
+}
+
+.weather-condition-icon--storm {
+  color: #d8a84c;
+}
+
+.weather-condition-icon--snow {
+  color: #b9e5ee;
+}
+
+.weather-condition-icon--fog {
+  color: var(--text-muted);
+}
+
+.weather-condition-icon--night {
+  color: #aebee8;
 }
 
 .w-temp-large {
@@ -272,7 +301,7 @@
     gap: 1rem;
   }
 
-  .sun-icon {
+  .temp-display > .weather-condition-icon {
     width: 46px;
     height: 46px;
   }

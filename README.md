@@ -21,6 +21,7 @@ For local development, Vite can still proxy `/api` to the FastAPI backend from `
 
 ```bash
 SENSOR_API_URL=https://sensor-data-7jqu.onrender.com/sensor-data
+IRRIGATION_API_URL=https://sensor-data-7jqu.onrender.com/irrigation-active
 SENSOR_HISTORY_API_URL=
 CROP_MODEL_API_URL=https://crop-model-api-1.onrender.com/predict
 OPENWEATHER_API_KEY=your-openweather-key

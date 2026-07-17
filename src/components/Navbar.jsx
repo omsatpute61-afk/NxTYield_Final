@@ -7,7 +7,11 @@ function Navbar() {
   const { summary } = useFarmData();
 
   const isActive = (path) => location.pathname === path;
-  const connectionLabel = summary.demoMode ? 'Demo Mode On' : summary.connected ? 'Connected' : 'Waiting';
+  const connectionLabel = summary.demoMode
+    ? 'Demo Mode On'
+    : summary.connected
+      ? summary.streamConnected ? 'Connected' : 'Receiving'
+      : 'Waiting';
   const farmLabel = summary.demoMode
     ? 'FarmSense Demo'
     : summary.source === 'hardware'
@@ -21,7 +25,7 @@ function Navbar() {
       <div className="navbar-container">
         {/* Logo Left */}
         <div className="navbar-logo">
-          <img className="logo-icon" src="/nxtyield-logo.png" alt="" aria-hidden="true" />
+          <img className="logo-icon" src="/nxtyield-brand-logo.png" alt="" aria-hidden="true" />
           <span className="logo-text">NxTYield</span>
         </div>
 

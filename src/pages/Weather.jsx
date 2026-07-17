@@ -1,13 +1,68 @@
-import { CloudRain, Wind, Droplets, Thermometer, Sun } from 'lucide-react';
+import {
+  Cloud,
+  CloudFog,
+  CloudLightning,
+  CloudMoon,
+  CloudRain,
+  CloudSun,
+  Droplets,
+  Moon,
+  Snowflake,
+  Sun,
+  Thermometer,
+  Wind,
+} from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { useFarmData } from '../context/FarmDataContext';
 import { compactValue, formatValue } from '../lib/farmUtils';
 import './Weather.css';
 
-function iconForRain(rain) {
-  if (rain > 50) return <CloudRain size={22} className="text-primary" />;
-  if (rain > 20) return <CloudRain size={22} className="text-muted" />;
-  return <Sun size={22} className="text-warning" />;
+function weatherIcon(iconCode, description = '') {
+  const code = String(iconCode || '').toLowerCase();
+  const condition = String(description || '').toLowerCase();
+  const isNight = code.endsWith('n');
+
+  if (code.startsWith('11') || condition.includes('thunder')) {
+    return { Icon: CloudLightning, tone: 'storm' };
+  }
+  if (code.startsWith('13') || condition.includes('snow') || condition.includes('sleet')) {
+    return { Icon: Snowflake, tone: 'snow' };
+  }
+  if (
+    code.startsWith('50') ||
+    ['fog', 'mist', 'haze', 'smoke'].some((term) => condition.includes(term))
+  ) {
+    return { Icon: CloudFog, tone: 'fog' };
+  }
+  if (
+    code.startsWith('09') ||
+    code.startsWith('10') ||
+    ['rain', 'drizzle', 'shower'].some((term) => condition.includes(term))
+  ) {
+    return { Icon: CloudRain, tone: 'rain' };
+  }
+  if (code.startsWith('04') || code.startsWith('03') || condition.includes('overcast')) {
+    return { Icon: Cloud, tone: 'cloud' };
+  }
+  if (code.startsWith('02') || condition.includes('partly cloud') || condition.includes('mainly clear')) {
+    return { Icon: isNight ? CloudMoon : CloudSun, tone: isNight ? 'night' : 'partly' };
+  }
+  if (code.startsWith('01') || condition.includes('clear') || condition.includes('sun')) {
+    return { Icon: isNight ? Moon : Sun, tone: isNight ? 'night' : 'sun' };
+  }
+  if (condition.includes('cloud')) return { Icon: Cloud, tone: 'cloud' };
+  return { Icon: CloudSun, tone: 'partly' };
+}
+
+function WeatherConditionIcon({ icon, description, size = 22 }) {
+  const { Icon, tone } = weatherIcon(icon, description);
+  return (
+    <Icon
+      size={size}
+      className={`weather-condition-icon weather-condition-icon--${tone}`}
+      aria-hidden="true"
+    />
+  );
 }
 
 function Weather() {
@@ -36,7 +91,7 @@ function Weather() {
       <div className="panel weather-hero mb-4">
         <div className="weather-main">
           <div className="temp-display">
-            <Sun size={64} className="sun-icon" />
+            <WeatherConditionIcon icon={current.icon} description={current.description} size={64} />
             <div>
               <span className="w-temp-large">{formatValue(temperature, { unit: 'C' })}</span>
               <p className="text-muted" style={{ fontSize: '0.875rem', marginTop: '0.25rem' }}>
@@ -84,7 +139,7 @@ function Weather() {
             <div key={day.date || day.day} className={`ribbon-node ${i === 0 ? 'active' : ''}`}>
               <span className="r-day">{day.day}</span>
               <div className="r-icon">
-                {iconForRain(day.rain_probability)}
+                <WeatherConditionIcon icon={day.icon} description={day.description} />
               </div>
               <span className="r-high">{compactValue(day.high)} deg</span>
               <span className="r-low text-muted">{compactValue(day.low)} deg</span>

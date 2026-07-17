@@ -16,18 +16,57 @@ function sensorContext(sensor = {}) {
   ].join('\n');
 }
 
+function valueOrWaiting(value, suffix = '') {
+  if (value === null || value === undefined || value === '') return 'waiting';
+  return `${value}${suffix}`;
+}
+
+function localReply(message, sensor = {}) {
+  const normalized = message.toLowerCase();
+  const moisture = Number(sensor.moisture);
+  const ph = Number(sensor.ph);
+
+  if (normalized.includes('irrig') || normalized.includes('pump') || normalized.includes('water')) {
+    if (Number.isFinite(moisture)) {
+      if (moisture >= 75) return `Soil moisture is ${moisture}%, so keep the pump off. The wet-soil safety cutoff should block irrigation.`;
+      if (moisture < 40) return `Soil moisture is ${moisture}%, so irrigation can run if rain is not detected.`;
+    }
+    return 'Irrigation should follow the relay logic: dry soil and no rain turns the pump on; wet soil keeps it off.';
+  }
+
+  if (normalized.includes('ph') || normalized.includes('soil')) {
+    const phText = Number.isFinite(ph) ? `pH is ${ph.toFixed(1)}` : 'pH is waiting for data';
+    return `${phText}. For most crops, keep soil pH near 5.5 to 7.5 and verify with a calibrated probe when available.`;
+  }
+
+  if (normalized.includes('npk') || normalized.includes('nutrient') || normalized.includes('fertil')) {
+    return `Latest NPK is N ${valueOrWaiting(sensor.nitrogen)}, P ${valueOrWaiting(sensor.phosphorus)}, K ${valueOrWaiting(sensor.potassium)} mg/kg. Use this as a trend signal, then confirm fertilizer decisions with crop-specific needs.`;
+  }
+
+  return [
+    'Local NxTYield assistant is active.',
+    `Moisture: ${valueOrWaiting(sensor.moisture, '%')}`,
+    `pH: ${valueOrWaiting(sensor.ph)}`,
+    `NPK: ${valueOrWaiting(sensor.nitrogen)} / ${valueOrWaiting(sensor.phosphorus)} / ${valueOrWaiting(sensor.potassium)} mg/kg`,
+    'Ask about irrigation, pH, NPK, or crop conditions for a more focused answer.',
+  ].join('\n');
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return methodNotAllowed(res, ['POST']);
 
   const key = process.env.GROQ_API_KEY;
+  const body = await readBody(req);
   if (!key) {
-    return json(res, 200, unavailable('groq', 'AI API not available. Set GROQ_API_KEY in Vercel.', {
-      reply: 'AI API not available.',
-    }));
+    return json(res, 200, {
+      available: true,
+      reply: localReply(String(body.message || ''), body.sensor),
+      provider: 'local',
+      message: null,
+    });
   }
 
   try {
-    const body = await readBody(req);
     const message = String(body.message || '').trim();
     if (!message) return json(res, 400, { available: false, message: 'Message is required' });
 

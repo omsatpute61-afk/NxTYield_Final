@@ -545,6 +545,11 @@
   border-color: rgba(62, 142, 99, 0.62);
 }
 
+.irr-auto-toggle:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
 .irr-auto-toggle.is-on {
   background-color: rgba(31, 80, 62, 0.74);
   border-color: rgba(62, 142, 99, 0.78);
@@ -568,6 +573,10 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.45rem;
+}
+
+.irr-options-remote {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .irr-option {

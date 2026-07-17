@@ -45,7 +45,7 @@ const storySections = [
 const capabilities = [
   ['Live Farm Monitoring', 'Sensor packets, farm health and field status in one operational surface.'],
   ['Weather Intelligence', 'OpenWeather context informs rain, wind and temperature-aware decisions.'],
-  ['Crop Planning', 'Nutrient and environment data support crop guidance without pH hardware claims.'],
+  ['Crop Planning', 'Nutrient, pH and environment data support crop guidance.'],
   ['AI Insights and Recommendations', 'Sensor readings are converted into practical recommendations.'],
   ['Farmer Assistant', 'The assistant answers farm questions using current system context.'],
   ['System and Irrigation Control', 'Relay irrigation status and system health stay visible to the operator.'],
@@ -81,6 +81,7 @@ function sensorReadings(latest) {
   return [
     { icon: Droplets, label: 'Soil moisture probe', value: latest?.moisture == null ? 'Awaiting live feed' : `${compactValue(latest.moisture)}%` },
     { icon: Thermometer, label: 'Soil-temperature probe', value: latest?.soil_temperature == null ? 'Awaiting live feed' : `${compactValue(latest.soil_temperature, 1)} C` },
+    { icon: FlaskConical, label: 'Soil pH probe', value: latest?.ph == null ? 'Awaiting live feed' : `${compactValue(latest.ph, 1)} pH` },
     { icon: FlaskConical, label: 'NPK sensor', value: npkValues.length ? npkValues.join(' / ') : 'Awaiting live feed' },
     { icon: Radio, label: 'Atmospheric station', value: latest?.air_temperature == null ? 'Awaiting live feed' : `${compactValue(latest.air_temperature, 1)} C air` },
     { icon: CloudRain, label: 'Rain sensor', value: latest?.rain_detected == null ? 'Awaiting live feed' : latest.rain_detected ? 'Rain detected' : 'Clear' },
@@ -176,7 +177,7 @@ function TransitionOverlay({ active }) {
         <span />
       </div>
       <div className="landing-transition__copy">
-        <img src="/nxtyield-logo.png" alt="" aria-hidden="true" />
+        <img src="/nxtyield-brand-logo.png" alt="" aria-hidden="true" />
         <span>NXTYIELD</span>
         <strong>Farm intelligence online</strong>
         <div className="landing-transition__status">
@@ -251,7 +252,7 @@ function Landing() {
       <TransitionOverlay active={transitioning} />
       <header className="landing-topbar" aria-label="NxTYield landing navigation">
         <div className="landing-mark">
-          <img className="landing-mark__logo" src="/nxtyield-logo.png" alt="" aria-hidden="true" />
+          <img className="landing-mark__logo" src="/nxtyield-brand-logo.png" alt="" aria-hidden="true" />
           <span>NxTYield</span>
         </div>
         <button type="button" onClick={enterDashboard} disabled={transitioning}>Enter dashboard</button>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Activity, Droplets, CloudSun, Wifi, Sprout, Thermometer, Wind, FlaskConical, Zap } from 'lucide-react';
 import DigitalFarmTwin from '../components/DigitalFarmTwin';
 import { useFarmData } from '../context/FarmDataContext';
+import { getRemoteIrrigation, setRemoteIrrigation } from '../lib/api';
 import {
   buildAlerts,
   compactValue,
@@ -11,6 +12,7 @@ import {
   humidityStatus,
   moistureStatus,
   nutrientStatus,
+  phStatus,
   toNumber,
 } from '../lib/farmUtils';
 import './Home.css';
@@ -27,6 +29,18 @@ const sensorDefinitions = [
     max: 100,
     target: '40-70%',
     statusFor: moistureStatus,
+  },
+  {
+    id: 'soil-ph',
+    label: 'Soil pH',
+    field: 'ph',
+    unit: 'pH',
+    icon: FlaskConical,
+    color: 'var(--color-secondary)',
+    min: 0,
+    max: 14,
+    target: '5.5-7.5 pH',
+    statusFor: phStatus,
   },
   {
     id: 'atm-temp',
@@ -111,18 +125,10 @@ const sensorDefinitions = [
   },
 ];
 
-const irrigationTimerOptions = [
-  { value: '0', label: '0', detail: 'Off' },
-  { value: '15', label: '15 min', detail: 'Timed' },
-  { value: '30', label: '30 min', detail: 'Timed' },
-  { value: 'infinity', label: 'Always', detail: 'Until off' },
+const remoteIrrigationOptions = [
+  { value: false, label: 'Relay', detail: 'Auto logic' },
+  { value: true, label: 'Start', detail: 'Pump on' },
 ];
-
-function formatTimerRemaining(seconds) {
-  if (seconds <= 0) return '0 min';
-  const minutes = Math.ceil(seconds / 60);
-  return `${minutes} min`;
-}
 
 function buildSensorData(latest) {
   return sensorDefinitions.map((sensor) => {
@@ -170,7 +176,7 @@ function DashboardArrivalTransition() {
       <div className="dashboard-arrival__grid" />
       <div className="dashboard-arrival__scan" />
       <div className="dashboard-arrival__mark">
-        <img src="/nxtyield-logo.png" alt="" />
+        <img src="/nxtyield-brand-logo.png" alt="" />
         <span>FarmSense AI online</span>
       </div>
     </div>
@@ -179,27 +185,38 @@ function DashboardArrivalTransition() {
 
 function Home() {
   const { latest, connected, insights, summary, weather, refreshInsights } = useFarmData();
-  const [irrigationTimer, setIrrigationTimer] = useState('0');
-  const [irrigationRemaining, setIrrigationRemaining] = useState(0);
-  const [irrigationAutoMode, setIrrigationAutoMode] = useState(false);
+  const [remoteIrrigation, setRemoteIrrigationState] = useState({ enabled: false, mode: 'relay_logic', updated_at: null });
+  const [irrigationLoading, setIrrigationLoading] = useState(false);
+  const [irrigationError, setIrrigationError] = useState('');
   const [showArrival, setShowArrival] = useState(false);
   const arrivalRequestedRef = useRef(false);
 
   useEffect(() => {
-    if (irrigationTimer !== '15' && irrigationTimer !== '30') return undefined;
+    let cancelled = false;
 
-    const timer = window.setInterval(() => {
-      setIrrigationRemaining((remaining) => {
-        if (remaining <= 1) {
-          setIrrigationTimer('0');
-          return 0;
-        }
-        return remaining - 1;
-      });
-    }, 1000);
+    async function loadRemoteIrrigation() {
+      try {
+        const command = await getRemoteIrrigation();
+        if (cancelled) return;
+        setRemoteIrrigationState({
+          enabled: Boolean(command.enabled),
+          mode: command.mode || (command.enabled ? 'remote_on' : 'relay_logic'),
+          updated_at: command.updated_at || null,
+        });
+        setIrrigationError(command.available === false ? command.message || 'Irrigation API not available' : '');
+      } catch (error) {
+        if (!cancelled) setIrrigationError(error.message || 'Irrigation API not available');
+      }
+    }
 
-    return () => window.clearInterval(timer);
-  }, [irrigationTimer]);
+    loadRemoteIrrigation();
+    const timer = window.setInterval(loadRemoteIrrigation, 10000);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, []);
 
   useEffect(() => {
     const shouldShowArrival =
@@ -215,48 +232,42 @@ function Home() {
     return () => window.clearTimeout(timer);
   }, []);
 
-  function selectIrrigationTimer(value) {
-    setIrrigationTimer(value);
-    if (value === '15') setIrrigationRemaining(15 * 60);
-    else if (value === '30') setIrrigationRemaining(30 * 60);
-    else setIrrigationRemaining(0);
-  }
-
-  function toggleIrrigationAutoMode() {
-    const nextAutoMode = !irrigationAutoMode;
-    setIrrigationAutoMode(nextAutoMode);
-    if (nextAutoMode) {
-      setIrrigationTimer('0');
-      setIrrigationRemaining(0);
+  async function updateRemoteIrrigation(enabled) {
+    setIrrigationLoading(true);
+    setIrrigationError('');
+    try {
+      const command = await setRemoteIrrigation(enabled);
+      setRemoteIrrigationState({
+        enabled: Boolean(command.enabled),
+        mode: command.mode || (command.enabled ? 'remote_on' : 'relay_logic'),
+        updated_at: command.updated_at || null,
+      });
+    } catch (error) {
+      setIrrigationError(error.message || 'Irrigation API not available');
+    } finally {
+      setIrrigationLoading(false);
     }
   }
 
-  function irrigationTimerStatus(irrigationActive, autoMode) {
-    if (autoMode && irrigationActive) return 'AUTO ON';
-    if (autoMode) return 'AUTO';
+  function toggleRemoteIrrigation() {
+    updateRemoteIrrigation(!remoteIrrigation.enabled);
+  }
+
+  function irrigationRemoteStatus(remoteEnabled, irrigationActive) {
+    if (remoteEnabled) return 'REMOTE ON';
     if (irrigationActive) return 'RELAY ON';
-    if (irrigationTimer === '0') return 'OFF';
-    if (irrigationTimer === 'infinity') return 'UNTIL OFF';
-    return 'TIMER SET';
+    return 'RELAY LOGIC';
   }
 
-  function irrigationTimerDetail(irrigationActive, rainDetected, autoMode, moistureValue) {
+  function irrigationRemoteDetail(remoteEnabled, irrigationActive, rainDetected, moistureValue) {
     const moisture = toNumber(moistureValue);
-
-    if (autoMode) {
-      if (rainDetected) return 'Auto holding - currently raining';
-      if (irrigationActive) return 'Auto active - relay responding to sensor threshold';
-      if (moisture !== null && moisture < 40) return `Auto ready - moisture ${compactValue(moisture)}%`;
-      return 'Auto monitoring moisture, rain and relay state';
-    }
-
-    let detail;
-    if (irrigationActive && irrigationTimer === '0') detail = 'Telemetry active';
-    else if (irrigationTimer === '15' || irrigationTimer === '30') detail = `${formatTimerRemaining(irrigationRemaining)} remaining`;
-    else if (irrigationTimer === 'infinity') detail = 'No auto shutoff';
-
-    if (rainDetected) return detail ? `Currently raining - ${detail}` : 'Currently raining - rain sensor active';
-    return detail;
+    if (irrigationError) return irrigationError;
+    if (irrigationLoading) return 'Syncing irrigation command';
+    if (remoteEnabled) return 'Pump command active';
+    if (rainDetected) return 'Relay logic holding - rain detected';
+    if (irrigationActive) return 'Relay logic active from field telemetry';
+    if (moisture !== null && moisture < 40) return `Relay logic ready - moisture ${compactValue(moisture)}%`;
+    return 'Relay logic monitoring field state';
   }
 
   const sensorData = buildSensorData(latest);
@@ -271,8 +282,9 @@ function Home() {
   const alerts = buildAlerts(latest, insights, connected);
   const irrigationActive = latest?.irrigation_active === true;
   const rainDetected = latest?.rain_detected === true;
-  const irrigationDisplay = irrigationTimerStatus(irrigationActive, irrigationAutoMode);
-  const irrigationDetail = irrigationTimerDetail(irrigationActive, rainDetected, irrigationAutoMode, latest?.moisture);
+  const remoteIrrigationEnabled = remoteIrrigation.enabled === true;
+  const irrigationDisplay = irrigationRemoteStatus(remoteIrrigationEnabled, irrigationActive);
+  const irrigationDetail = irrigationRemoteDetail(remoteIrrigationEnabled, irrigationActive, rainDetected, latest?.moisture);
 
   return (
     <div className={`container page-home ${showArrival ? 'page-home--arriving' : ''}`}>
@@ -364,41 +376,42 @@ function Home() {
 
           <div className="irrigation-control">
             <div className="irr-header">
-              <span className="irr-label">Irrigation Timer</span>
-              <span className={`irr-val ${irrigationAutoMode || irrigationActive || irrigationTimer !== '0' ? 'active' : ''}`}>
+              <span className="irr-label">Remote Irrigation</span>
+              <span className={`irr-val ${remoteIrrigationEnabled || irrigationActive ? 'active' : ''}`}>
                 {irrigationDisplay}
               </span>
             </div>
             <div className="irr-auto-row">
               <div className="irr-auto-copy">
-                <span><Zap size={14} aria-hidden="true" /> Auto mode</span>
-                <small>FarmSense AI supervises watering thresholds</small>
+                <span><Zap size={14} aria-hidden="true" /> Pump command</span>
+                <small>{remoteIrrigationEnabled ? 'Remote start enabled' : 'Relay logic enabled'}</small>
               </div>
               <button
                 type="button"
-                className={`irr-auto-toggle ${irrigationAutoMode ? 'is-on' : ''}`}
-                aria-label={irrigationAutoMode ? 'Disable irrigation auto mode' : 'Enable irrigation auto mode'}
-                aria-pressed={irrigationAutoMode}
-                onClick={toggleIrrigationAutoMode}
+                className={`irr-auto-toggle ${remoteIrrigationEnabled ? 'is-on' : ''}`}
+                aria-label={remoteIrrigationEnabled ? 'Use relay irrigation logic' : 'Start irrigation remotely'}
+                aria-pressed={remoteIrrigationEnabled}
+                onClick={toggleRemoteIrrigation}
+                disabled={irrigationLoading}
               >
                 <span className="irr-auto-thumb" aria-hidden="true" />
               </button>
             </div>
-            <div className="irr-options" role="group" aria-label="Irrigation timer presets">
-              {irrigationTimerOptions.map((option) => (
+            <div className="irr-options irr-options-remote" role="group" aria-label="Remote irrigation command">
+              {remoteIrrigationOptions.map((option) => (
                 <button
                   type="button"
-                  key={option.value}
-                  className={`irr-option ${irrigationTimer === option.value ? 'active' : ''}`}
-                  onClick={() => selectIrrigationTimer(option.value)}
-                  disabled={irrigationAutoMode}
+                  key={String(option.value)}
+                  className={`irr-option ${remoteIrrigationEnabled === option.value ? 'active' : ''}`}
+                  onClick={() => updateRemoteIrrigation(option.value)}
+                  disabled={irrigationLoading}
                 >
                   <span>{option.label}</span>
                   <small>{option.detail}</small>
                 </button>
               ))}
             </div>
-            <div className={`irr-timer-detail ${rainDetected ? 'text-warning' : ''}`}>{irrigationDetail || 'Relay off'}</div>
+            <div className={`irr-timer-detail ${rainDetected || irrigationError ? 'text-warning' : ''}`}>{irrigationDetail}</div>
           </div>
 
           <button className="btn btn-accent w-full mt-3" onClick={() => refreshInsights(true)}>Run FarmSense AI Diagnostic</button>

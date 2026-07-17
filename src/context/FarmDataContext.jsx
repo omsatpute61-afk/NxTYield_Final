@@ -23,7 +23,8 @@ import { calculateHealthScore, getSeason, hasSensorData, hasSensorPacket } from 
 const FarmDataContext = createContext(null);
 const INSIGHTS_COOLDOWN_MS = 120000;
 const MAX_HISTORY = 60;
-const SENSOR_POLL_MS = 5000;
+const SENSOR_POLL_MS = 1500;
+const DEMO_TICK_MS = 5000;
 const DEMO_MODE_STORAGE_KEY = 'nxtyield-demo-mode';
 
 function storedDemoMode() {
@@ -282,7 +283,7 @@ export function FarmDataProvider({ children }) {
   useEffect(() => {
     if (!demoMode) return undefined;
 
-    const timer = window.setInterval(() => setDemoTick(Date.now()), SENSOR_POLL_MS);
+    const timer = window.setInterval(() => setDemoTick(Date.now()), DEMO_TICK_MS);
     return () => window.clearInterval(timer);
   }, [demoMode]);
 
@@ -317,7 +318,7 @@ export function FarmDataProvider({ children }) {
     demoMode ? buildDemoChatStatus(chatStatus) : chatStatus
   ), [chatStatus, demoMode]);
 
-  const effectiveConnected = demoMode ? true : connected;
+  const effectiveConnected = demoMode ? true : connected || hasSensorData(effectiveLatest);
   const effectiveHealth = demoMode && !health ? buildDemoHealth(effectiveLatest, demoTick) : health;
   const effectiveApiErrors = useMemo(() => {
     if (!demoMode) return apiErrors;
@@ -337,6 +338,7 @@ export function FarmDataProvider({ children }) {
     const healthScore = calculateHealthScore(effectiveLatest, effectiveInsights);
     return {
       connected: effectiveConnected,
+      streamConnected: demoMode ? true : connected,
       backendAvailable: demoMode ? true : !effectiveApiErrors.health,
       source: effectiveLatest?.source || 'none',
       season: getSeason(),
@@ -344,7 +346,7 @@ export function FarmDataProvider({ children }) {
       healthScore,
       demoMode,
     };
-  }, [demoMode, effectiveApiErrors.health, effectiveConnected, effectiveInsights, effectiveLatest]);
+  }, [connected, demoMode, effectiveApiErrors.health, effectiveConnected, effectiveInsights, effectiveLatest]);
 
   const value = useMemo(() => ({
     latest: effectiveLatest,

@@ -5,6 +5,7 @@ export function json(res, status, payload) {
 
 export const DEFAULT_SENSOR_API_URL = 'https://sensor-data-7jqu.onrender.com/sensor-data';
 export const DEFAULT_CROP_MODEL_API_URL = 'https://crop-model-api-1.onrender.com/predict';
+export const DEFAULT_IRRIGATION_API_URL = 'http://127.0.0.1:8000/irrigation-active';
 
 export function methodNotAllowed(res, methods) {
   res.setHeader('Allow', methods.join(', '));
@@ -34,6 +35,10 @@ export function unavailable(provider, message, extra = {}) {
     message,
     ...extra,
   };
+}
+
+function localFallbacksEnabled() {
+  return process.env.VERCEL !== '1' && process.env.LOCAL_API_FALLBACKS !== 'false';
 }
 
 function toNumber(value) {
@@ -76,8 +81,8 @@ export function normalizeSensorPayload(payload) {
     nitrogen: toNumber(data?.nitrogen ?? data?.N),
     phosphorus: toNumber(data?.phosphorus ?? data?.P),
     potassium: toNumber(data?.potassium ?? data?.K),
-    moisture: toNumber(data?.moisture ?? data?.soil_moisture),
-    ph: toNumber(data?.ph ?? data?.pH),
+    moisture: toNumber(data?.moisture ?? data?.soil_moisture ?? data?.soilMoisture),
+    ph: toNumber(data?.ph ?? data?.pH ?? data?.soil_ph ?? data?.soil_pH ?? data?.soilPh),
     soil_temperature: toNumber(data?.soil_temperature ?? data?.soilTemperature),
     air_temperature: toNumber(data?.air_temperature ?? data?.airTemperature ?? data?.temperature),
     humidity: toNumber(data?.humidity),
@@ -104,6 +109,43 @@ export function normalizeSensorPayload(payload) {
   };
 }
 
+let localIrrigationState = {
+  enabled: false,
+  mode: 'relay_logic',
+  updated_at: null,
+};
+
+function localSensorFallback(reason = '') {
+  const now = Date.now();
+  const slow = Math.sin(now / 420000);
+  const slower = Math.sin(now / 720000 + 1.4);
+  const moisture = Math.round(74 + slow * 4);
+  const ph = Math.round((6.5 + slower * 0.25) * 10) / 10;
+  const soilTemperature = Math.round((22.6 + slower * 0.4) * 10) / 10;
+  const airTemperature = Math.round((24.8 + slow * 0.3) * 10) / 10;
+  const humidity = Math.round(50 + slower * 4);
+
+  return {
+    available: true,
+    provider: 'local',
+    message: reason ? `Using local fallback: ${reason}` : null,
+    nitrogen: 34 + Math.round(slow * 2),
+    phosphorus: 22 + Math.round(slower),
+    potassium: 205 + Math.round(slow * 6),
+    moisture,
+    ph,
+    soil_temperature: soilTemperature,
+    air_temperature: airTemperature,
+    humidity,
+    pressure: Math.round((1011 + slower * 2) * 10) / 10,
+    rain_detected: false,
+    irrigation_active: localIrrigationState.enabled && moisture < 75,
+    health_score: 82,
+    timestamp: new Date().toISOString(),
+    source: 'local-fallback',
+  };
+}
+
 export async function fetchSensorLatest() {
   const url = process.env.SENSOR_API_URL || DEFAULT_SENSOR_API_URL;
   if (!url) {
@@ -117,9 +159,89 @@ export async function fetchSensorLatest() {
     if (!response.ok) throw new Error(`Sensor API returned ${response.status}`);
     return normalizeSensorPayload(await response.json());
   } catch (error) {
+    if (localFallbacksEnabled()) {
+      return localSensorFallback(publicErrorMessage(error));
+    }
+
     return unavailable('sensor', `Sensor API not available: ${publicErrorMessage(error)}`, {
       source: 'none',
     });
+  }
+}
+
+function normalizeIrrigationCommand(payload) {
+  if (typeof payload === 'boolean') {
+    return {
+      enabled: payload,
+      mode: payload ? 'remote_on' : 'relay_logic',
+      updated_at: null,
+    };
+  }
+
+  return {
+    enabled: Boolean(payload?.enabled ?? payload?.value ?? payload?.remote_irrigation ?? payload?.irrigation_active),
+    mode: payload?.mode || ((payload?.enabled ?? payload?.value ?? payload?.remote_irrigation ?? payload?.irrigation_active) ? 'remote_on' : 'relay_logic'),
+    updated_at: payload?.updated_at || null,
+  };
+}
+
+function irrigationApiUrl() {
+  return process.env.IRRIGATION_API_URL || DEFAULT_IRRIGATION_API_URL;
+}
+
+export async function fetchRemoteIrrigation() {
+  const url = irrigationApiUrl();
+  try {
+    const response = await fetch(url, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Irrigation API returned ${response.status}`);
+    localIrrigationState = normalizeIrrigationCommand(await response.json());
+    return localIrrigationState;
+  } catch (error) {
+    if (localFallbacksEnabled()) {
+      return {
+        ...localIrrigationState,
+        available: true,
+        provider: 'local',
+        message: `Using local irrigation fallback: ${publicErrorMessage(error)}`,
+      };
+    }
+
+    return unavailable('irrigation', `Irrigation API not available: ${publicErrorMessage(error)}`, {
+      enabled: false,
+      mode: 'relay_logic',
+      updated_at: null,
+    });
+  }
+}
+
+export async function sendRemoteIrrigation(enabled) {
+  const url = irrigationApiUrl();
+  localIrrigationState = {
+    enabled: Boolean(enabled),
+    mode: enabled ? 'remote_on' : 'relay_logic',
+    updated_at: new Date().toISOString(),
+  };
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(Boolean(enabled)),
+    });
+    if (!response.ok) throw new Error(`Irrigation API returned ${response.status}`);
+    localIrrigationState = normalizeIrrigationCommand(await response.json());
+    return localIrrigationState;
+  } catch (error) {
+    if (localFallbacksEnabled()) {
+      return {
+        ...localIrrigationState,
+        available: true,
+        provider: 'local',
+        message: `Using local irrigation fallback: ${publicErrorMessage(error)}`,
+      };
+    }
+
+    throw error;
   }
 }
 

@@ -204,6 +204,45 @@
   white-space: nowrap;
 }
 
+.dft-hover-card {
+  position: absolute;
+  z-index: 5;
+  width: 10.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.16rem;
+  transform: translateY(-100%);
+  pointer-events: none;
+  color: var(--text-main);
+  background:
+    linear-gradient(145deg, rgba(62, 142, 99, 0.08), transparent 58%),
+    rgba(17, 21, 19, 0.94);
+  border: 1px solid rgba(62, 142, 99, 0.45);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
+  padding: 0.52rem 0.6rem;
+  backdrop-filter: blur(8px);
+}
+
+.dft-hover-card strong {
+  overflow: hidden;
+  color: var(--text-main);
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dft-hover-card span {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .dft-waiting {
   position: absolute;
   left: 50%;

@@ -134,6 +134,7 @@ function SystemStatus() {
             {[
               { key: 'Data Source', val: latest?.source || 'Waiting', status: summary.hasSensor ? 'ok' : 'warn', note: summary.hasSensor ? 'Active' : 'No Data' },
               { key: 'Soil Moisture', val: formatValue(latest?.moisture, { unit: '%' }), status: latest?.moisture !== null && latest?.moisture !== undefined ? 'ok' : 'warn', note: '' },
+              { key: 'Soil pH', val: formatValue(latest?.ph, { unit: 'pH' }), status: latest?.ph !== null && latest?.ph !== undefined ? 'ok' : 'warn', note: '' },
               { key: 'Soil Temperature', val: formatValue(latest?.soil_temperature, { unit: 'C' }), status: latest?.soil_temperature !== null && latest?.soil_temperature !== undefined ? 'ok' : 'warn', note: '' },
               { key: 'Air Temperature', val: formatValue(latest?.air_temperature, { unit: 'C' }), status: latest?.air_temperature !== null && latest?.air_temperature !== undefined ? 'ok' : 'warn', note: '' },
               { key: 'Rain Sensor', val: latest?.rain_detected === undefined || latest?.rain_detected === null ? 'Unavailable' : latest.rain_detected ? 'Rain' : 'Clear', status: latest?.rain_detected ? 'warn' : 'ok', note: '' },
