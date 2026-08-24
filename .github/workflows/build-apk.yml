@@ -17,7 +17,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -28,30 +28,40 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: Setup Android SDK
+      - name: Setup Android SDK Tools
         uses: android-actions/setup-android@v3
 
-      - name: Install Dependencies
+      - name: Install Android Platform & Build Tools
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+
+      - name: Install Node Dependencies
         run: npm install --legacy-peer-deps
 
       - name: Build Web Application
         run: npm run build
 
-      - name: Sync Capacitor Android Platform
+      - name: Sync Capacitor
         run: npx cap sync android
 
-      - name: Make Gradle Wrapper Executable
+      - name: Set SDK Location in local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+
+      - name: Grant Execute Permission to Gradlew
         run: chmod +x android/gradlew
 
-      - name: Build Android APK via Gradle
+      - name: Build Android Debug APK
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: ./gradlew assembleDebug --no-daemon --info --stacktrace
 
       - name: Prepare APK Output
         run: |
           mkdir -p release-output
-          cp $(find android/app/build/outputs/apk -name "*.apk" | head -n 1) release-output/NxTYield.apk
-          ls -la release-output
+          find android/app/build/outputs/apk -type f -name "*.apk" -exec cp {} release-output/NxTYield.apk \;
+          echo "=== Built APK Information ==="
+          ls -lh release-output/NxTYield.apk
 
       - name: Upload APK to Artifacts
         uses: actions/upload-artifact@v4
@@ -61,7 +71,7 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Release APK
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
