@@ -9,12 +9,12 @@ permissions:
   contents: write
 
 jobs:
-  build-apk:
+  build:
     name: Build NxTYield Android APK
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Setup Node.js 20
@@ -22,35 +22,38 @@ jobs:
         with:
           node-version: 20
 
-      - name: Setup Java JDK 17
+      - name: Setup Java JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
-      - name: Install NPM Dependencies
-        run: npm install --no-audit
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Dependencies
+        run: npm install --legacy-peer-deps
 
       - name: Build Web Application
         run: npm run build
 
-      - name: Sync Capacitor Android
+      - name: Sync Capacitor Android Platform
         run: npx cap sync android
 
-      - name: Grant Execute Permission to Gradlew
+      - name: Make Gradle Wrapper Executable
         run: chmod +x android/gradlew
 
-      - name: Build Android Debug APK
+      - name: Build Android APK via Gradle
         working-directory: android
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Collect Generated APK
+      - name: Prepare APK Output
         run: |
           mkdir -p release-output
-          find android/app/build/outputs/apk -type f -name "*.apk" -exec cp {} release-output/NxTYield.apk \;
-          ls -lh release-output/NxTYield.apk
+          cp $(find android/app/build/outputs/apk -name "*.apk" | head -n 1) release-output/NxTYield.apk
+          ls -la release-output
 
-      - name: Upload APK Artifact
+      - name: Upload APK to Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: NxTYield-APK
@@ -58,13 +61,13 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Publish GitHub Release
+      - name: Release APK
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
           tag_name: v1.0.0
           name: "NxTYield v1.0.0 (Android APK)"
-          body: "Official Android APK release for NxTYield Smart Agriculture App."
+          body: "Official Android APK build of NxTYield."
           files: release-output/NxTYield.apk
         continue-on-error: true
         env:
