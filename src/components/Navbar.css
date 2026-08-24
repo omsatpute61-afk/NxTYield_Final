@@ -82,10 +82,33 @@
   background: linear-gradient(90deg, var(--color-amber), var(--color-success));
 }
 
+.navbar-apk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: linear-gradient(135deg, rgba(142, 154, 255, 0.22), rgba(162, 123, 252, 0.28));
+  border: 1px solid rgba(142, 154, 255, 0.55);
+  color: #C2CCFF;
+  padding: 0.35rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.navbar-apk-btn:hover {
+  background: linear-gradient(135deg, #8E9AFF, #A27BFC);
+  color: #0F1424;
+  box-shadow: 0 4px 14px rgba(142, 154, 255, 0.35);
+  transform: translateY(-1px);
+}
+
 .navbar-context {
   display: flex;
   align-items: center;
-  gap: 2rem;
+  gap: 1.5rem;
   min-width: 0;
 }
 

@@ -1,11 +1,12 @@
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
-import { ArrowRight, BrainCircuit, CloudRain, Cpu, Droplets, FlaskConical, Radio, RotateCcw, Sprout, Thermometer } from 'lucide-react';
+import { ArrowRight, BrainCircuit, CloudRain, Cpu, Download, Droplets, FlaskConical, Radio, RotateCcw, Sprout, Thermometer } from 'lucide-react';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import * as THREE from 'three';
 import { FarmTwinScene } from '../components/DigitalFarmTwin';
+import ApkDownloadModal from '../components/ApkDownloadModal';
 import { useFarmData } from '../context/FarmDataContext';
 import { compactValue, hasSensorData, toNumber } from '../lib/farmUtils';
 import { timeLightingFromHour } from '../lib/timeLighting';
@@ -200,6 +201,7 @@ function Landing() {
   const [activeLayer, setActiveLayer] = useState(0);
   const [parallax, setParallax] = useState({ x: 0, y: 0 });
   const [transitioning, setTransitioning] = useState(false);
+  const [apkModalOpen, setApkModalOpen] = useState(false);
   const readings = useMemo(() => sensorReadings(latest), [latest]);
 
   useEffect(() => {
@@ -255,7 +257,12 @@ function Landing() {
           <img className="landing-mark__logo" src="/nxtyield-brand-logo.png" alt="" aria-hidden="true" />
           <span>NxTYield</span>
         </div>
-        <button type="button" onClick={enterDashboard} disabled={transitioning}>Enter dashboard</button>
+        <div className="landing-topbar-actions">
+          <button type="button" className="landing-apk-pill" onClick={() => setApkModalOpen(true)}>
+            <Download size={14} /> Download APK
+          </button>
+          <button type="button" onClick={enterDashboard} disabled={transitioning}>Enter dashboard</button>
+        </div>
       </header>
 
       <main>
@@ -283,6 +290,9 @@ function Landing() {
             <div className="landing-actions">
               <button className="landing-primary" type="button" onClick={enterDashboard} disabled={transitioning}>
                 Optimize Your Farm <ArrowRight size={18} aria-hidden="true" />
+              </button>
+              <button className="landing-apk-hero-btn" type="button" onClick={() => setApkModalOpen(true)}>
+                <Download size={18} /> Download APK (18 MB)
               </button>
               <button className="landing-secondary" type="button" onClick={scrollToSystem}>Explore the System</button>
             </div>
@@ -375,12 +385,20 @@ function Landing() {
             <button className="landing-primary" type="button" onClick={enterDashboard} disabled={transitioning}>
               Optimize Your Farm <ArrowRight size={18} aria-hidden="true" />
             </button>
+            <button className="landing-apk-hero-btn" type="button" onClick={() => setApkModalOpen(true)}>
+              <Download size={18} /> Download APK (18 MB)
+            </button>
             <button className="landing-secondary" type="button" onClick={() => window.scrollTo({ top: 0, behavior: reducedMotion ? 'auto' : 'smooth' })}>
               Return to top <RotateCcw size={18} aria-hidden="true" />
             </button>
           </div>
         </section>
       </main>
+
+      <ApkDownloadModal
+        isOpen={apkModalOpen}
+        onClose={() => setApkModalOpen(false)}
+      />
     </div>
   );
 }

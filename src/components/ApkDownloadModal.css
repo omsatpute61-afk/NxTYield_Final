@@ -1,0 +1,262 @@
+.apk-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background-color: rgba(10, 14, 12, 0.82);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  animation: apkFadeIn 0.2s ease-out;
+}
+
+@keyframes apkFadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.apk-modal-card {
+  background: var(--bg-panel, #19201C);
+  border: 1px solid rgba(58, 74, 65, 0.9);
+  border-radius: 14px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  max-width: 540px;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  color: var(--text-main, #E5E9E7);
+}
+
+.apk-modal-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #3E8E63, #8B9DFF, #5C7C3A);
+}
+
+.apk-modal-close {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted, #8F9E96);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.apk-modal-close:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFF;
+}
+
+.apk-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 1px solid rgba(58, 74, 65, 0.6);
+}
+
+.apk-app-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: #111513;
+  padding: 6px;
+  border: 1px solid rgba(62, 142, 99, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.apk-app-icon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.apk-app-info h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.apk-app-info p {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted, #8F9E96);
+}
+
+.apk-modal-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* User's Exact Banner Style matching their uploaded image */
+.apk-download-hero-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.5rem 1rem;
+  gap: 0.75rem;
+}
+
+.apk-hero-subtext {
+  font-size: 0.85rem;
+  color: var(--text-muted, #A0B2A8);
+  letter-spacing: 0.02em;
+}
+
+.apk-hero-btn {
+  background: linear-gradient(135deg, #8E9AFF 0%, #A27BFC 100%);
+  color: #0F1424;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 1.05rem;
+  border-radius: 8px;
+  padding: 0.95rem 2rem;
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  box-shadow: 0 8px 24px rgba(142, 154, 255, 0.28);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.apk-hero-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 30px rgba(142, 154, 255, 0.42);
+  filter: brightness(1.05);
+}
+
+.apk-hero-btn:active {
+  transform: translateY(0);
+}
+
+.apk-hero-meta {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.apk-download-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.apk-download-alert.success {
+  background: rgba(62, 142, 99, 0.15);
+  border: 1px solid rgba(62, 142, 99, 0.4);
+  color: #98E2B5;
+}
+
+.apk-download-alert a {
+  color: #FFF;
+  text-decoration: underline;
+}
+
+.apk-install-steps {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 1rem 1.25rem;
+}
+
+.apk-install-steps h4 {
+  font-size: 0.85rem;
+  margin-bottom: 0.65rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-success, #3E8E63);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.apk-install-steps ol {
+  padding-left: 1.2rem;
+  font-size: 0.82rem;
+  color: var(--text-muted, #B0BEB6);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  line-height: 1.4;
+}
+
+.apk-install-steps strong {
+  color: #FFF;
+}
+
+.apk-install-steps code {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  color: #D89B2B;
+}
+
+.apk-modal-footer-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.apk-share-btn, .apk-github-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.65rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.apk-share-btn {
+  background: rgba(62, 142, 99, 0.2);
+  border: 1px solid rgba(62, 142, 99, 0.5);
+  color: #72D29A;
+}
+
+.apk-share-btn:hover {
+  background: rgba(62, 142, 99, 0.32);
+  color: #FFF;
+}
+
+.apk-github-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-muted, #8F9E96);
+}
+
+.apk-github-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFF;
+}

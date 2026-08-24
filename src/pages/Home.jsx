@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Activity, Droplets, CloudSun, Wifi, Sprout, Thermometer, Wind, FlaskConical, Zap } from 'lucide-react';
+import { Activity, Droplets, CloudSun, Download, Wifi, Sprout, Smartphone, Thermometer, Wind, FlaskConical, Zap } from 'lucide-react';
 import DigitalFarmTwin from '../components/DigitalFarmTwin';
+import ApkDownloadModal from '../components/ApkDownloadModal';
 import { useFarmData } from '../context/FarmDataContext';
 import { getRemoteIrrigation, setRemoteIrrigation } from '../lib/api';
 import {
@@ -189,6 +190,7 @@ function Home() {
   const [irrigationLoading, setIrrigationLoading] = useState(false);
   const [irrigationError, setIrrigationError] = useState('');
   const [showArrival, setShowArrival] = useState(false);
+  const [apkModalOpen, setApkModalOpen] = useState(false);
   const arrivalRequestedRef = useRef(false);
 
   useEffect(() => {
@@ -430,6 +432,32 @@ function Home() {
           {sensorData.map((sensor) => <SensorCard key={sensor.id} sensor={sensor} />)}
         </div>
       </div>
+
+      {/* Official Android Client Download Banner */}
+      <div className="panel apk-dashboard-banner mt-4">
+        <div className="apk-dashboard-banner-inner">
+          <div className="apk-dashboard-copy">
+            <div className="apk-dashboard-tag">
+              <Smartphone size={14} /> Android App Available
+            </div>
+            <h3>NxTYield for Android Devices</h3>
+            <p>Install the dedicated field app for real-time sensor tracking, automated irrigation alerts, and offline weather telemetry.</p>
+          </div>
+          <button
+            type="button"
+            className="apk-dashboard-action-btn"
+            onClick={() => setApkModalOpen(true)}
+          >
+            <Download size={18} />
+            <span>Download APK (18 MB)</span>
+          </button>
+        </div>
+      </div>
+
+      <ApkDownloadModal
+        isOpen={apkModalOpen}
+        onClose={() => setApkModalOpen(false)}
+      />
     </div>
   );
 }

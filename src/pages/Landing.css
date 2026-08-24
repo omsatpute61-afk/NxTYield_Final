@@ -30,6 +30,51 @@
   backdrop-filter: blur(10px);
 }
 
+.landing-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  pointer-events: auto;
+}
+
+.landing-apk-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: linear-gradient(135deg, rgba(142, 154, 255, 0.2), rgba(162, 123, 252, 0.25)) !important;
+  border: 1px solid rgba(142, 154, 255, 0.5) !important;
+  color: #C2CCFF !important;
+  font-weight: 600;
+}
+
+.landing-apk-pill:hover {
+  background: linear-gradient(135deg, #8E9AFF, #A27BFC) !important;
+  color: #0F1424 !important;
+  border-color: #8E9AFF !important;
+}
+
+.landing-apk-hero-btn {
+  min-height: 2.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  padding: 0.72rem 1.25rem;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  background: linear-gradient(135deg, #8E9AFF 0%, #A27BFC 100%);
+  color: #0F1424;
+  border: 1px solid rgba(142, 154, 255, 0.8);
+  box-shadow: 0 4px 18px rgba(142, 154, 255, 0.3);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.landing-apk-hero-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px rgba(142, 154, 255, 0.45);
+  filter: brightness(1.05);
+}
+
 .landing-mark {
   display: inline-flex;
   align-items: center;
