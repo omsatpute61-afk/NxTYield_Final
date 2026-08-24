@@ -16,7 +16,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
+      - name: Set up Node.js 20
         uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -27,31 +27,43 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
+      - name: Accept Android SDK Licenses
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          yes | $ANDROID_HOME/tools/bin/sdkmanager --licenses || true
 
-      - name: Install dependencies
-        run: npm install
+      - name: Install NPM dependencies
+        run: npm install --legacy-peer-deps
 
-      - name: Build web application
+      - name: Build Web Application
         run: npm run build
 
-      - name: Sync Capacitor
-        run: npx cap sync android
+      - name: Initialize or Sync Capacitor Android
+        run: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          else
+            npx cap sync android
+          fi
+
+      - name: Configure Android SDK Location
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > android/local.properties
+          cat android/local.properties
 
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
 
       - name: Build Android Debug APK
-        run: |
-          cd android
-          ./gradlew assembleDebug --no-daemon
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
 
-      - name: Copy APK to release folder
+      - name: Prepare APK for Artifact & Release
         run: |
           mkdir -p release-output
-          find android/app/build/outputs/apk -name "*.apk" -exec cp {} release-output/NxTYield.apk \;
-          ls -la release-output
+          find android/app/build/outputs/apk -type f -name "*.apk" -exec cp {} release-output/NxTYield.apk \;
+          echo "Found APK:"
+          ls -lh release-output/NxTYield.apk
 
       - name: Upload APK as Artifact
         uses: actions/upload-artifact@v4
@@ -61,13 +73,13 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Create GitHub Release (v1.0.0)
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         with:
           tag_name: v1.0.0
           name: "NxTYield v1.0.0 (Android APK)"
-          body: "Direct download link for NxTYield Android App APK."
+          body: "Official Android APK download for NxTYield Smart Agriculture App."
           files: release-output/NxTYield.apk
         continue-on-error: true
         env:
