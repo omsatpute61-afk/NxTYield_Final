@@ -1,0 +1,22 @@
+{
+  "name": "NxTYield Smart Agriculture",
+  "short_name": "NxTYield",
+  "description": "Smart Agriculture IoT & AI Monitoring Dashboard for farmers",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#111513",
+  "theme_color": "#1E4D3D",
+  "icons": [
+    {
+      "src": "/nxtyield-favicon.png",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "/nxtyield-brand-logo.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

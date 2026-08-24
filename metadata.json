@@ -1,0 +1,6 @@
+{
+  "name": "NxTYield",
+  "description": "Smart Agriculture IoT & AI Dashboard for real-time sensor monitoring, automated irrigation, weather forecasting, and crop yield prediction.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
