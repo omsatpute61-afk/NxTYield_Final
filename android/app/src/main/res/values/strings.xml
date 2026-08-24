@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">NxTYield</string>
+    <string name="title_activity_main">NxTYield</string>
+    <string name="package_name">com.nxtyield.farm</string>
+    <string name="custom_url_scheme">com.nxtyield.farm</string>
+</resources>

@@ -1,0 +1,64 @@
+{
+  "id": "/",
+  "name": "NxTYield - Smart Agriculture Platform",
+  "short_name": "NxTYield",
+  "description": "Smart Agriculture IoT & AI Monitoring Dashboard for real-time sensor tracking, automated irrigation, weather forecasting, and crop yield prediction.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "window-controls-overlay", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#111513",
+  "theme_color": "#1E4D3D",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["utilities", "productivity", "business"],
+  "icons": [
+    {
+      "src": "/nxtyield-favicon.png",
+      "sizes": "16x16 24x24 32x32 64x64",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/nxtyield-brand-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/nxtyield-brand-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/nxtyield-brand-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/nxtyield-brand-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/nxtyield-brand-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "NxTYield Farm Dashboard"
+    },
+    {
+      "src": "/nxtyield-brand-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "NxTYield Mobile Telemetry"
+    }
+  ]
+}
